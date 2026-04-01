@@ -91,7 +91,72 @@ body {
   border-radius:8px;
   background: var(--surface2);
   border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
 }
+.month-label:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── MONTH PICKER ── */
+.picker-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+}
+.picker-overlay.open { display: block; }
+
+.picker {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  width: 260px;
+  z-index: 101;
+  animation: slideUp 0.2s ease;
+}
+
+.picker-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.picker-year {
+  font-family: var(--font-mono);
+  font-size: 15px; font-weight: 600;
+  color: var(--text);
+}
+.picker-year-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-sub);
+  cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+.picker-year-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.picker-months {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.picker-month-btn {
+  padding: 8px 4px;
+  border-radius: 8px; border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; text-align: center;
+  transition: all 0.15s ease;
+}
+.picker-month-btn:hover { background: var(--surface2); color: var(--text); }
+.picker-month-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.picker-month-btn.future { opacity: 0.3; pointer-events: none; }
 
 /* ── TABS ── */
 .tabbar {
@@ -510,9 +575,20 @@ tfoot td.total-cpa { color: var(--accent); }
     </div>
     <div class="month-nav">
       <button class="month-btn" id="prevBtn" onclick="changeMonth(-1)">‹</button>
-      <div class="month-label" id="monthLabel"></div>
+      <div class="month-label" id="monthLabel" onclick="openPicker()"></div>
       <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">›</button>
     </div>
+
+  <!-- MONTH PICKER -->
+  <div class="picker-overlay" id="pickerOverlay" onclick="closePicker()"></div>
+  <div class="picker" id="picker" style="display:none">
+    <div class="picker-header">
+      <button class="picker-year-btn" onclick="changePickerYear(-1)">‹</button>
+      <div class="picker-year" id="pickerYear"></div>
+      <button class="picker-year-btn" onclick="changePickerYear(1)">›</button>
+    </div>
+    <div class="picker-months" id="pickerMonths"></div>
+  </div>
     <button class="lock-btn" id="lockBtn" onclick="onLockBtnClick()">
       <span class="lock-icon">🔒</span>
       <span id="lockBtnText">잠금</span>
@@ -573,7 +649,8 @@ const EDIT_PASSWORD = '9119';
 /* ══════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════ */
-const MEDIA = [
+const MIN_YEAR  = 2026;
+const MIN_MONTH = 3;
   { id:'meta',   name:'메타',   color:'#1877F2', emoji:'𝐟' },
   { id:'google', name:'구글',   color:'#EA4335', emoji:'G' },
   { id:'daangn', name:'당근',   color:'#FF6F0F', emoji:'🥕' },
@@ -679,10 +756,12 @@ function calcROAS(revenue, spend) {
 ══════════════════════════════════════════════ */
 function updateMonthLabel() {
   document.getElementById('monthLabel').textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
-  // disable next if current month
   const isCurrentMonth = curYear === now.getFullYear() && curMonth === now.getMonth() + 1;
+  const isMinMonth = curYear === MIN_YEAR && curMonth === MIN_MONTH;
   document.getElementById('nextBtn').style.opacity = isCurrentMonth ? '0.3' : '1';
   document.getElementById('nextBtn').style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
+  document.getElementById('prevBtn').style.opacity = isMinMonth ? '0.3' : '1';
+  document.getElementById('prevBtn').style.pointerEvents = isMinMonth ? 'none' : 'auto';
 }
 
 async function changeMonth(delta) {
@@ -1317,6 +1396,58 @@ function setDashChartMode(mode) {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
   renderDashboardChart(daysInMonth(curYear, curMonth));
+}
+
+/* ══════════════════════════════════════════════
+   MONTH PICKER
+══════════════════════════════════════════════ */
+let pickerYear = null;
+
+function openPicker() {
+  pickerYear = curYear;
+  renderPickerMonths();
+  const label = document.getElementById('monthLabel');
+  const rect  = label.getBoundingClientRect();
+  const picker = document.getElementById('picker');
+  picker.style.display = 'block';
+  picker.style.top  = (rect.bottom + 8) + 'px';
+  picker.style.left = (rect.left + rect.width/2 - 130) + 'px';
+  document.getElementById('pickerOverlay').classList.add('open');
+}
+
+function closePicker() {
+  document.getElementById('picker').style.display = 'none';
+  document.getElementById('pickerOverlay').classList.remove('open');
+}
+
+function changePickerYear(delta) {
+  pickerYear += delta;
+  if (pickerYear > now.getFullYear()) { pickerYear = now.getFullYear(); return; }
+  if (pickerYear < MIN_YEAR) { pickerYear = MIN_YEAR; return; }
+  renderPickerMonths();
+}
+
+function renderPickerMonths() {
+  document.getElementById('pickerYear').textContent = pickerYear + '년';
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('pickerMonths').innerHTML = months.map((m, i) => {
+    const mo = i + 1;
+    const isActive = pickerYear === curYear && mo === curMonth;
+    const isFuture = pickerYear === now.getFullYear() && mo > now.getMonth() + 1;
+    const isPast   = pickerYear === MIN_YEAR && mo < MIN_MONTH;
+    return `<button class="picker-month-btn ${isActive?'active':''} ${isFuture||isPast?'future':''}"
+      onclick="selectMonth(${mo})">${m}</button>`;
+  }).join('');
+}
+
+async function selectMonth(month) {
+  closePicker();
+  curYear  = pickerYear;
+  curMonth = month;
+  updateMonthLabel();
+  showLoading();
+  await fetchMonthData(curYear, curMonth);
+  render();
 }
 
 /* ══════════════════════════════════════════════

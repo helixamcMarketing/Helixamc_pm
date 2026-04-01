@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광고비 정산</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:        #0F1117;
+  --surface:   #181B24;
+  --surface2:  #1E2230;
+  --border:    #2A2E3E;
+  --border2:   #333849;
+  --text:      #E8EAF0;
+  --text-sub:  #7A8099;
+  --text-mute: #464D66;
+  --accent:    #4F8EF7;
+  --accent-dim:#1A2D54;
+  --green:     #34C759;
+  --green-dim: #0D2E1A;
+  --red:       #FF453A;
+  --red-dim:   #2E0E0C;
+  --meta:   #1877F2;
+  --google: #EA4335;
+  --daangn: #FF6F0F;
+  --naver:  #03C75A;
+  --kakao:  #FAE100;
+
+  --radius: 12px;
+  --font-mono: 'DM Mono', monospace;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  position: sticky; top:0; z-index:50;
+  background: rgba(15,17,23,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 16px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+  white-space: nowrap;
+}
+.logo-dot { width:8px; height:8px; border-radius:50%; background: var(--accent); }
+
+.month-nav {
+  display: flex; align-items: center; gap: 4px;
+}
+.month-btn {
+  width:32px; height:32px; border-radius:8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+  cursor: pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition: all 0.15s ease;
+}
+.month-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.month-label {
+  font-family: var(--font-mono);
+  font-size:14px; font-weight:500;
+  color: var(--text);
+  min-width: 100px; text-align:center;
+  padding: 6px 12px;
+  border-radius:8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+/* ── TABS ── */
+.tabbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabbar::-webkit-scrollbar { display:none; }
+
+.tab {
+  padding: 14px 18px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.tab-dot {
+  width:7px; height:7px; border-radius:50%;
+}
+
+/* ── CONTENT ── */
+.content { flex:1; padding: 28px 24px; max-width:1200px; margin:0 auto; width:100%; }
+
+/* ── SECTION HEADER ── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size:16px; font-weight:700; letter-spacing:-0.3px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-badge {
+  font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px;
+  background: var(--accent-dim); color: var(--accent);
+}
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+table {
+  width: 100%; border-collapse: collapse;
+}
+
+thead tr {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+th {
+  padding: 12px 16px;
+  font-size:11px; font-weight:600; letter-spacing:0.8px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  text-align: right;
+}
+th:first-child { text-align: left; }
+th.col-date    { width:110px; }
+th.col-spend   { width:150px; }
+th.col-db      { width:110px; }
+th.col-cpa     { width:130px; }
+th.col-revenue { width:150px; }
+th.col-roas    { width:100px; }
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s ease;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+td {
+  padding: 0;
+  text-align: right;
+}
+td:first-child { text-align: left; }
+
+.td-date {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size:13px; color: var(--text-sub);
+  font-weight:400;
+}
+.td-date .day {
+  font-size:11px; color: var(--text-mute);
+  margin-left:6px;
+}
+
+.cell-input {
+  width:100%; height:42px;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  text-align: right;
+  padding: 0 16px;
+  transition: background 0.15s ease;
+  caret-color: var(--accent);
+}
+.cell-input::placeholder { color: var(--text-mute); font-weight:400; }
+.cell-input:focus { background: rgba(79,142,247,0.06); }
+
+td.td-cpa {
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  color: var(--text-sub);
+  vertical-align:middle; height:42px;
+}
+td.td-cpa.filled { color: var(--green); }
+td.td-cpa.bad    { color: var(--red); }
+
+td.td-roas {
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  color: var(--text-sub);
+  vertical-align:middle; height:42px;
+}
+td.td-roas.good { color: var(--accent); }
+td.td-roas.bad  { color: var(--red); }
+
+/* ── TOTAL ROW ── */
+tfoot tr {
+  background: var(--surface2);
+  border-top: 2px solid var(--border2);
+}
+tfoot td {
+  padding: 13px 16px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:600;
+  color: var(--text);
+  vertical-align:middle;
+}
+tfoot td:first-child { color: var(--text-sub); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; font-family:'Noto Sans KR',sans-serif; }
+tfoot td.total-cpa { color: var(--accent); }
+
+/* ── DASHBOARD ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px 18px;
+}
+.kpi-label {
+  font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase;
+  color: var(--text-mute); margin-bottom: 10px;
+}
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size:22px; font-weight:500;
+  color: var(--text); letter-spacing:-0.5px;
+  margin-bottom:4px;
+}
+.kpi-sub { font-size:11px; color: var(--text-mute); }
+
+.dash-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:hidden;
+}
+
+.dash-table { width:100%; border-collapse:collapse; }
+.dash-table thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+.dash-table th {
+  padding: 12px 20px;
+  font-size:11px; font-weight:600; letter-spacing:0.8px;
+  color: var(--text-mute); text-transform:uppercase;
+  text-align:right;
+}
+.dash-table th:first-child { text-align:left; }
+.dash-table tbody tr { border-bottom:1px solid var(--border); transition: background 0.1s; }
+.dash-table tbody tr:last-child { border-bottom:none; }
+.dash-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.dash-table td {
+  padding:14px 20px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  text-align:right; color:var(--text);
+  vertical-align:middle;
+}
+.dash-table td:first-child { text-align:left; font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:600; }
+.dash-table tfoot tr { background:var(--surface2); border-top:2px solid var(--border2); }
+.dash-table tfoot td { color:var(--accent); }
+.dash-table tfoot td:first-child { color:var(--text-sub); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+
+.media-badge {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:3px 10px 3px 6px; border-radius:20px;
+  font-size:12px; font-weight:600;
+}
+
+/* ── EMPTY STATE ── */
+.empty-row td {
+  text-align:center !important;
+  padding:40px !important;
+  color: var(--text-mute);
+  font-size:13px;
+}
+
+/* ── LOCK BUTTON ── */
+.lock-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.lock-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lock-btn.unlocked { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.lock-btn .lock-icon { font-size: 13px; }
+
+/* ── LOCKED INPUT STATE ── */
+.cell-input:disabled {
+  cursor: default;
+  color: var(--text-sub);
+  opacity: 1;
+}
+.cell-input:disabled::placeholder { color: var(--text-mute); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 36px 32px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.modal-title {
+  font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+.modal-sub {
+  font-size: 12px; color: var(--text-sub); font-weight: 300;
+  margin-bottom: 24px;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 20px; font-weight: 500;
+  letter-spacing: 8px;
+  text-align: center;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+  margin-bottom: 10px;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-input.error { border-color: var(--red); animation: shake 0.3s ease; }
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  25%      { transform:translateX(-6px); }
+  75%      { transform:translateX(6px); }
+}
+
+.modal-error {
+  font-size: 12px; color: var(--red);
+  min-height: 18px; margin-bottom: 18px;
+  text-align: center;
+}
+
+.modal-btns { display: flex; gap: 8px; }
+.modal-btn {
+  flex:1; padding: 12px;
+  border-radius: 10px; border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.modal-btn.cancel { background: var(--surface2); color: var(--text-sub); }
+.modal-btn.cancel:hover { color: var(--text); }
+.modal-btn.confirm { background: var(--accent); color: white; }
+.modal-btn.confirm:hover { opacity: 0.88; }
+
+/* ── CHART ── */
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 24px 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.chart-title {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.6px;
+  text-transform: uppercase; color: var(--text-mute);
+  margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+}
+.chart-title-left { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+
+.chart-toggle {
+  display: flex; gap: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+.chart-toggle-btn {
+  padding: 4px 12px;
+  border-radius: 6px; border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+  background: transparent; color: var(--text-mute);
+  letter-spacing: 0.3px;
+}
+.chart-toggle-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.chart-legend {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-sub); font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.legend-bar  { width:12px; height:12px; border-radius:3px; }
+.legend-line { width:16px; height:2.5px; border-radius:2px; position:relative; }
+.legend-line::after {
+  content:''; position:absolute;
+  width:6px; height:6px; border-radius:50%;
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  background: inherit;
+}
+.chart-canvas-wrap { position:relative; height:220px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius:3px; }
+
+/* ── ANIM ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width:600px) {
+  .topbar { padding: 0 14px; }
+  .tabbar { padding: 0 14px; }
+  .content { padding: 20px 14px; }
+  .tab { padding: 12px 12px; font-size:12px; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      광고비 정산
+    </div>
+    <div class="month-nav">
+      <button class="month-btn" id="prevBtn" onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">›</button>
+    </div>
+    <button class="lock-btn" id="lockBtn" onclick="onLockBtnClick()">
+      <span class="lock-icon">🔒</span>
+      <span id="lockBtnText">잠금</span>
+    </button>
+  </header>
+
+  <!-- PASSWORD MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+    <div class="modal">
+      <div class="modal-title">🔐 편집 잠금 해제</div>
+      <div class="modal-sub">데이터를 입력하려면 비밀번호를 입력하세요</div>
+      <input class="modal-input" id="pwInput" type="password"
+        maxlength="20" placeholder="••••"
+        onkeydown="if(event.key==='Enter') submitPassword()"
+        oninput="clearError()"
+      >
+      <div class="modal-error" id="pwError"></div>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" onclick="closeModal()">취소</button>
+        <button class="modal-btn confirm" onclick="submitPassword()">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABBAR -->
+  <nav class="tabbar" id="tabbar">
+    <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span>📊</span> 대시보드
+    </div>
+    <div class="tab" data-tab="meta" onclick="switchTab('meta')">
+      <span class="tab-dot" style="background:var(--meta)"></span> 메타
+    </div>
+    <div class="tab" data-tab="google" onclick="switchTab('google')">
+      <span class="tab-dot" style="background:var(--google)"></span> 구글
+    </div>
+    <div class="tab" data-tab="daangn" onclick="switchTab('daangn')">
+      <span class="tab-dot" style="background:var(--daangn)"></span> 당근
+    </div>
+    <div class="tab" data-tab="naver" onclick="switchTab('naver')">
+      <span class="tab-dot" style="background:var(--naver)"></span> 네이버
+    </div>
+    <div class="tab" data-tab="kakao" onclick="switchTab('kakao')">
+      <span class="tab-dot" style="background:var(--kakao)"></span> 카카오
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content" id="content"></main>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   ⚙️  비밀번호 설정 — 아래 값을 원하는 비밀번호로 변경하세요
+══════════════════════════════════════════════ */
+const EDIT_PASSWORD = '9119';
+
+/* ══════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════ */
+const MEDIA = [
+  { id:'meta',   name:'메타',   color:'#1877F2', emoji:'𝐟' },
+  { id:'google', name:'구글',   color:'#EA4335', emoji:'G' },
+  { id:'daangn', name:'당근',   color:'#FF6F0F', emoji:'🥕' },
+  { id:'naver',  name:'네이버', color:'#03C75A', emoji:'N' },
+  { id:'kakao',  name:'카카오', color:'#FAE100', emoji:'K' },
+];
+const DAYS_KO = ['일','월','화','수','목','금','토'];
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+const now = new Date();
+let curYear  = now.getFullYear();
+let curMonth = now.getMonth() + 1; // 1-based
+let curTab   = 'dashboard';
+let isUnlocked = false;
+
+/* ══════════════════════════════════════════════
+   FIREBASE
+══════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCmJpvfoMvquoBdDJAK4ZJ657C2UOTZ5eU",
+  authDomain: "helixamc-pm.firebaseapp.com",
+  databaseURL: "https://helixamc-pm-default-rtdb.firebaseio.com",
+  projectId: "helixamc-pm",
+  storageBucket: "helixamc-pm.firebasestorage.app",
+  messagingSenderId: "382526528183",
+  appId: "1:382526528183:web:c487b9de1471829afe0b32",
+  measurementId: "G-0F55R2PE1Q"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ══════════════════════════════════════════════
+   STORAGE (in-memory cache + Firebase)
+══════════════════════════════════════════════ */
+const dataCache = {};
+
+function cacheKey(year, month, mediaId) {
+  return `${year}_${String(month).padStart(2,'0')}_${mediaId}`;
+}
+
+function loadData(year, month, mediaId) {
+  return dataCache[cacheKey(year, month, mediaId)] || {};
+}
+
+function saveData(year, month, mediaId, data) {
+  const key = cacheKey(year, month, mediaId);
+  dataCache[key] = data;
+  const path = `adlog/${year}/${String(month).padStart(2,'0')}/${mediaId}`;
+  db.ref(path).set(data).catch(e => console.error('Firebase write error:', e));
+}
+
+async function fetchMonthData(year, month) {
+  const path = `adlog/${year}/${String(month).padStart(2,'0')}`;
+  const snap = await db.ref(path).once('value');
+  const val  = snap.val() || {};
+  MEDIA.forEach(m => {
+    dataCache[cacheKey(year, month, m.id)] = val[m.id] || {};
+  });
+}
+
+async function fetchAllData() {
+  const snap = await db.ref('adlog').once('value');
+  const val  = snap.val() || {};
+  Object.entries(val).forEach(([year, months]) => {
+    Object.entries(months).forEach(([month, medias]) => {
+      Object.entries(medias).forEach(([mediaId, data]) => {
+        dataCache[cacheKey(Number(year), Number(month), mediaId)] = data || {};
+      });
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function getDayOfWeek(year, month, day) {
+  return new Date(year, month - 1, day).getDay();
+}
+
+function fmtMoney(n) {
+  if (!n && n !== 0) return '-';
+  return Number(n).toLocaleString('ko-KR');
+}
+
+function calcCPA(spend, db) {
+  if (!spend || !db || db === 0) return null;
+  return Math.round(spend / db);
+}
+
+function calcROAS(revenue, spend) {
+  if (!revenue || !spend || spend === 0) return null;
+  return Math.round((revenue / spend) * 100);
+}
+
+/* ══════════════════════════════════════════════
+   MONTH NAV
+══════════════════════════════════════════════ */
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
+  // disable next if current month
+  const isCurrentMonth = curYear === now.getFullYear() && curMonth === now.getMonth() + 1;
+  document.getElementById('nextBtn').style.opacity = isCurrentMonth ? '0.3' : '1';
+  document.getElementById('nextBtn').style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
+}
+
+async function changeMonth(delta) {
+  curMonth += delta;
+  if (curMonth > 12) { curMonth = 1;  curYear++; }
+  if (curMonth < 1)  { curMonth = 12; curYear--; }
+  updateMonthLabel();
+  showLoading();
+  await fetchMonthData(curYear, curMonth);
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   TAB
+══════════════════════════════════════════════ */
+function switchTab(tabId) {
+  curTab = tabId;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   RENDER ROUTER
+══════════════════════════════════════════════ */
+function render() {
+  if (curTab === 'dashboard') renderDashboard();
+  else renderMediaTable(curTab);
+}
+
+/* ══════════════════════════════════════════════
+   MEDIA TABLE
+══════════════════════════════════════════════ */
+function renderMediaTable(mediaId) {
+  const media = MEDIA.find(m => m.id === mediaId);
+  const days  = daysInMonth(curYear, curMonth);
+  const data  = loadData(curYear, curMonth, mediaId);
+
+  let totalSpend = 0, totalDB = 0, totalRevenue = 0;
+
+  let rows = '';
+  for (let d = 1; d <= days; d++) {
+    const key  = String(d);
+    const row  = data[key] || { spend:'', db:'', revenue:'' };
+    const dow  = getDayOfWeek(curYear, curMonth, d);
+    const dayLabel = DAYS_KO[dow];
+    const isWeekend = dow === 0 || dow === 6;
+    const spendVal   = row.spend   !== '' ? Number(row.spend)   : null;
+    const dbVal      = row.db      !== '' ? Number(row.db)      : null;
+    const revenueVal = row.revenue !== '' ? Number(row.revenue) : null;
+    const cpa        = calcCPA(spendVal, dbVal);
+    const roas       = calcROAS(revenueVal, spendVal);
+
+    if (spendVal)   totalSpend   += spendVal;
+    if (dbVal)      totalDB      += dbVal;
+    if (revenueVal) totalRevenue += revenueVal;
+
+    const cpaClass  = cpa  ? 'filled' : '';
+    const roasClass = roas ? (Number(roas) >= 100 ? 'good' : 'bad') : '';
+    const dateStyle = isWeekend ? `color:${dow===0?'#FF453A':'#4F8EF7'};` : '';
+
+    rows += `
+      <tr>
+        <td class="td-date">
+          <span style="${dateStyle}">${curYear}.${String(curMonth).padStart(2,'0')}.${String(d).padStart(2,'0')}</span>
+          <span class="day" style="${dateStyle}">${dayLabel}</span>
+        </td>
+        <td>
+          <input class="cell-input" type="text" inputmode="numeric"
+            placeholder="0"
+            value="${row.spend}"
+            data-day="${d}" data-field="spend" data-media="${mediaId}"
+            onchange="onCellChange(this)"
+            onfocus="this.select()"
+            ${isUnlocked ? '' : 'disabled'}
+          >
+        </td>
+        <td>
+          <input class="cell-input" type="text" inputmode="numeric"
+            placeholder="0"
+            value="${row.db}"
+            data-day="${d}" data-field="db" data-media="${mediaId}"
+            onchange="onCellChange(this)"
+            onfocus="this.select()"
+            ${isUnlocked ? '' : 'disabled'}
+          >
+        </td>
+        <td class="td-cpa ${cpaClass}" id="cpa_${mediaId}_${d}">
+          ${cpa ? fmtMoney(cpa) + ' ₩' : '-'}
+        </td>
+        <td>
+          <input class="cell-input" type="text" inputmode="numeric"
+            placeholder="0"
+            value="${row.revenue}"
+            data-day="${d}" data-field="revenue" data-media="${mediaId}"
+            onchange="onCellChange(this)"
+            onfocus="this.select()"
+            ${isUnlocked ? '' : 'disabled'}
+          >
+        </td>
+        <td class="td-roas ${roasClass}" id="roas_${mediaId}_${d}">
+          ${roas ? fmtMoney(roas) + '%' : '-'}
+        </td>
+      </tr>`;
+  }
+
+  const totalCPA  = calcCPA(totalSpend, totalDB);
+  const totalROAS = calcROAS(totalRevenue, totalSpend);
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        <span style="color:${media.color}; font-size:18px;">●</span>
+        ${media.name}
+        <span class="section-badge">${curYear}.${String(curMonth).padStart(2,'0')}</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-date">날짜</th>
+            <th class="col-spend">소진 광고비 (₩)</th>
+            <th class="col-db">유입 DB (건)</th>
+            <th class="col-cpa">DB 단가 (₩)</th>
+            <th class="col-revenue">매출 (₩)</th>
+            <th class="col-roas">ROAS</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td>합계</td>
+            <td id="foot_spend_${mediaId}">${totalSpend ? fmtMoney(totalSpend) : '-'}</td>
+            <td id="foot_db_${mediaId}">${totalDB ? fmtMoney(totalDB) : '-'}</td>
+            <td class="total-cpa" id="foot_cpa_${mediaId}">${totalCPA ? fmtMoney(totalCPA) + ' ₩' : '-'}</td>
+            <td id="foot_revenue_${mediaId}">${totalRevenue ? fmtMoney(totalRevenue) : '-'}</td>
+            <td class="total-cpa" id="foot_roas_${mediaId}">${totalROAS ? fmtMoney(totalROAS) + '%' : '-'}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+
+}
+
+/* ══════════════════════════════════════════════
+   CELL CHANGE
+══════════════════════════════════════════════ */
+function onCellChange(input) {
+  const mediaId = input.dataset.media;
+  const day     = String(input.dataset.day);
+  const field   = input.dataset.field;
+  const raw     = input.value.replace(/,/g, '').trim();
+  const num     = raw === '' ? '' : parseInt(raw, 10);
+
+  if (raw !== '' && isNaN(num)) {
+    input.value = '';
+    return;
+  }
+
+  // update storage
+  const data = loadData(curYear, curMonth, mediaId);
+  if (!data[day]) data[day] = { spend:'', db:'' };
+  data[day][field] = num === '' ? '' : num;
+  saveData(curYear, curMonth, mediaId, data);
+
+  // format display
+  if (num !== '') input.value = num;
+
+  // recalc CPA for this row
+  const rowData = data[day];
+  const spendV   = rowData.spend   !== '' ? Number(rowData.spend)   : null;
+  const dbV      = rowData.db      !== '' ? Number(rowData.db)      : null;
+  const revenueV = rowData.revenue !== '' ? Number(rowData.revenue) : null;
+
+  const cpa  = calcCPA(spendV, dbV);
+  const roas = calcROAS(revenueV, spendV);
+
+  const cpaEl  = document.getElementById(`cpa_${mediaId}_${day}`);
+  const roasEl = document.getElementById(`roas_${mediaId}_${day}`);
+  if (cpaEl) {
+    cpaEl.textContent = cpa ? fmtMoney(cpa) + ' ₩' : '-';
+    cpaEl.className   = `td-cpa ${cpa ? 'filled' : ''}`;
+  }
+  if (roasEl) {
+    roasEl.textContent = roas ? fmtMoney(roas) + '%' : '-';
+    roasEl.className   = `td-roas ${roas ? (Number(roas) >= 100 ? 'good' : 'bad') : ''}`;
+  }
+
+  // recalc footer totals
+  recalcFooter(mediaId);
+
+  // update chart if visible
+  if (chartInstance && curTab === mediaId) {
+    const media  = MEDIA.find(m => m.id === mediaId);
+    const days   = daysInMonth(curYear, curMonth);
+    const latest = loadData(curYear, curMonth, mediaId);
+    const spends = [], revenues = [], roasArr = [];
+    for (let d = 1; d <= days; d++) {
+      const r       = latest[String(d)] || {};
+      const sp      = r.spend   !== '' && r.spend   != null ? Number(r.spend)   : 0;
+      const rv      = r.revenue !== '' && r.revenue != null ? Number(r.revenue) : 0;
+      spends.push(sp);
+      revenues.push(rv);
+      roasArr.push(sp > 0 && rv > 0 ? Number((rv / sp).toFixed(2)) : null);
+    }
+    chartInstance.data.datasets[0].data = spends;
+    chartInstance.data.datasets[1].data = revenues;
+    chartInstance.data.datasets[2].data = roasArr;
+    chartInstance.update('none');
+  }
+}
+
+function recalcFooter(mediaId) {
+  const data  = loadData(curYear, curMonth, mediaId);
+  const days  = daysInMonth(curYear, curMonth);
+  let totalSpend = 0, totalDB = 0, totalRevenue = 0;
+  for (let d = 1; d <= days; d++) {
+    const r = data[String(d)] || {};
+    if (r.spend   !== '' && r.spend   != null) totalSpend   += Number(r.spend);
+    if (r.db      !== '' && r.db      != null) totalDB      += Number(r.db);
+    if (r.revenue !== '' && r.revenue != null) totalRevenue += Number(r.revenue);
+  }
+  const totalCPA  = calcCPA(totalSpend, totalDB);
+  const totalROAS = calcROAS(totalRevenue, totalSpend);
+
+  const sEl  = document.getElementById(`foot_spend_${mediaId}`);
+  const dEl  = document.getElementById(`foot_db_${mediaId}`);
+  const cEl  = document.getElementById(`foot_cpa_${mediaId}`);
+  const rEl  = document.getElementById(`foot_revenue_${mediaId}`);
+  const roEl = document.getElementById(`foot_roas_${mediaId}`);
+
+  if (sEl)  sEl.textContent  = totalSpend   ? fmtMoney(totalSpend)   : '-';
+  if (dEl)  dEl.textContent  = totalDB      ? fmtMoney(totalDB)      : '-';
+  if (cEl)  cEl.textContent  = totalCPA     ? fmtMoney(totalCPA) + ' ₩' : '-';
+  if (rEl)  rEl.textContent  = totalRevenue ? fmtMoney(totalRevenue) : '-';
+  if (roEl) roEl.textContent = totalROAS    ? fmtMoney(totalROAS) + '%'        : '-';
+}
+
+/* ══════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════ */
+function renderDashboard() {
+  const days = daysInMonth(curYear, curMonth);
+  let grandSpend = 0, grandDB = 0, grandRevenue = 0;
+
+  // per-media totals
+  const summaries = MEDIA.map(m => {
+    const data = loadData(curYear, curMonth, m.id);
+    let spend = 0, db = 0, revenue = 0;
+    for (let d = 1; d <= days; d++) {
+      const r = data[String(d)] || {};
+      if (r.spend   !== '' && r.spend   != null) spend   += Number(r.spend);
+      if (r.db      !== '' && r.db      != null) db      += Number(r.db);
+      if (r.revenue !== '' && r.revenue != null) revenue += Number(r.revenue);
+    }
+    grandSpend   += spend;
+    grandDB      += db;
+    grandRevenue += revenue;
+    return { ...m, spend, db, revenue, cpa: calcCPA(spend, db), roas: calcROAS(revenue, spend) };
+  });
+
+  const grandCPA  = calcCPA(grandSpend, grandDB);
+  const grandROAS = calcROAS(grandRevenue, grandSpend);
+
+  const kpiHtml = `
+    <div class="dash-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">총 소진 광고비</div>
+        <div class="kpi-value">${grandSpend ? fmtMoney(grandSpend) : '0'}</div>
+        <div class="kpi-sub">₩ · ${curYear}.${String(curMonth).padStart(2,'0')}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">총 유입 DB</div>
+        <div class="kpi-value">${grandDB ? fmtMoney(grandDB) : '0'}</div>
+        <div class="kpi-sub">건 · ${curYear}.${String(curMonth).padStart(2,'0')}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">평균 DB 단가</div>
+        <div class="kpi-value" style="color:var(--accent)">${grandCPA ? fmtMoney(grandCPA) : '-'}</div>
+        <div class="kpi-sub">₩ / 건</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">총 매출</div>
+        <div class="kpi-value">${grandRevenue ? fmtMoney(grandRevenue) : '0'}</div>
+        <div class="kpi-sub">₩ · ${curYear}.${String(curMonth).padStart(2,'0')}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">전체 ROAS</div>
+        <div class="kpi-value" style="color:${grandROAS && Number(grandROAS)>=100 ? 'var(--accent)' : 'var(--red)'}">${grandROAS ? fmtMoney(grandROAS) + '%' : '-'}</div>
+        <div class="kpi-sub">매출 ÷ 광고비</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">집행 매체 수</div>
+        <div class="kpi-value">${summaries.filter(s => s.spend > 0).length}</div>
+        <div class="kpi-sub">/ 5개 매체</div>
+      </div>
+    </div>`;
+
+  const mediaRows = summaries.map(s => `
+    <tr>
+      <td>
+        <span class="media-badge" style="background:${s.color}22; color:${s.color}">
+          <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>
+          ${s.name}
+        </span>
+      </td>
+      <td>${s.spend   ? fmtMoney(s.spend)   : '-'}</td>
+      <td>${s.db      ? fmtMoney(s.db)      : '-'}</td>
+      <td style="color:${s.cpa  ? 'var(--green)'  : 'var(--text-mute)'}">${s.cpa  ? fmtMoney(s.cpa) + ' ₩' : '-'}</td>
+      <td>${s.revenue ? fmtMoney(s.revenue) : '-'}</td>
+      <td style="color:${s.roas ? (Number(s.roas)>=100 ? 'var(--accent)' : 'var(--red)') : 'var(--text-mute)'}">${s.roas ? fmtMoney(s.roas) + '%' : '-'}</td>
+    </tr>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        대시보드
+        <span class="section-badge">${curYear}.${String(curMonth).padStart(2,'0')}</span>
+      </div>
+    </div>
+    ${kpiHtml}
+    <div class="chart-wrap">
+      <div class="chart-title">
+        <div class="chart-title-left">
+          전체 매체 합산 추이
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-bar" style="background:#4F8EF7"></div>광고비</div>
+            <div class="legend-item"><div class="legend-bar" style="background:#34C759"></div>매출</div>
+            <div class="legend-item"><div class="legend-line" style="background:#F4A030"></div>ROAS</div>
+          </div>
+        </div>
+        <div class="chart-toggle">
+          <button class="chart-toggle-btn dash-toggle-btn ${dashChartMode==='daily'?'active':''}" data-mode="daily" onclick="setDashChartMode('daily')">일별</button>
+          <button class="chart-toggle-btn dash-toggle-btn ${dashChartMode==='monthly'?'active':''}" data-mode="monthly" onclick="setDashChartMode('monthly')">월별</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="dashChart"></canvas></div>
+    </div>
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title" style="font-size:14px; color:var(--text-sub);">매체별 월 합계</div>
+    </div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>매체</th>
+            <th>소진 광고비 (₩)</th>
+            <th>유입 DB (건)</th>
+            <th>DB 단가 (₩)</th>
+            <th>매출 (₩)</th>
+            <th>ROAS</th>
+          </tr>
+        </thead>
+        <tbody>${mediaRows}</tbody>
+        <tfoot>
+          <tr>
+            <td>전체 합계</td>
+            <td>${grandSpend   ? fmtMoney(grandSpend)   : '-'}</td>
+            <td>${grandDB      ? fmtMoney(grandDB)      : '-'}</td>
+            <td>${grandCPA     ? fmtMoney(grandCPA) + ' ₩' : '-'}</td>
+            <td>${grandRevenue ? fmtMoney(grandRevenue) : '-'}</td>
+            <td>${grandROAS    ? fmtMoney(grandROAS) + '%'        : '-'}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+
+  setTimeout(() => {
+    renderDashboardChart(days);
+  }, 50);
+}
+
+/* ══════════════════════════════════════════════
+   CHART
+══════════════════════════════════════════════ */
+let dashChartInstance = null;
+let mediaChartMode = 'daily';   // 'daily' | 'monthly'
+let dashChartMode  = 'daily';
+
+/* ── 월별 데이터 수집 ── */
+function getMonthlyData(mediaId) {
+  const months = new Set();
+  Object.keys(dataCache).forEach(k => {
+    const m = k.match(/^(\d{4})_(\d{2})_(.+)$/);
+    if (m && (mediaId === 'dashboard' || m[3] === mediaId)) {
+      months.add(`${m[1]}_${m[2]}`);
+    }
+  });
+  const sorted = [...months].sort();
+  return sorted.map(ym => {
+    const [y, mo] = ym.split('_');
+    const days = new Date(Number(y), Number(mo), 0).getDate();
+    let spend = 0, revenue = 0, db = 0;
+    const targets = mediaId === 'dashboard' ? MEDIA.map(m => m.id) : [mediaId];
+    targets.forEach(mid => {
+      const data = loadData(Number(y), Number(mo), mid);
+      for (let d = 1; d <= days; d++) {
+        const r = data[String(d)] || {};
+        if (r.spend   !== '' && r.spend   != null) spend   += Number(r.spend);
+        if (r.revenue !== '' && r.revenue != null) revenue += Number(r.revenue);
+        if (r.db      !== '' && r.db      != null) db      += Number(r.db);
+      }
+    });
+    return { label: `${y}.${mo}`, spend, revenue, db, roas: calcROAS(revenue, spend) };
+  });
+}
+
+function renderDashboardChart(days) {
+  if (dashChartInstance) { dashChartInstance.destroy(); dashChartInstance = null; }
+
+  let labels, spends, revenues, roasArr;
+
+  if (dashChartMode === 'monthly') {
+    const monthly = getMonthlyData('dashboard');
+    labels   = monthly.map(m => m.label);
+    spends   = monthly.map(m => m.spend);
+    revenues = monthly.map(m => m.revenue);
+    roasArr  = monthly.map(m => m.roas);
+  } else {
+    labels = []; spends = []; revenues = []; roasArr = [];
+    for (let d = 1; d <= days; d++) {
+      labels.push(`${d}일`);
+      let totalSpend = 0, totalRevenue = 0;
+      MEDIA.forEach(m => {
+        const data = loadData(curYear, curMonth, m.id);
+        const r    = data[String(d)] || {};
+        if (r.spend   !== '' && r.spend   != null) totalSpend   += Number(r.spend);
+        if (r.revenue !== '' && r.revenue != null) totalRevenue += Number(r.revenue);
+      });
+      spends.push(totalSpend);
+      revenues.push(totalRevenue);
+      roasArr.push(calcROAS(totalRevenue, totalSpend));
+    }
+  }
+
+  const ctx = document.getElementById('dashChart').getContext('2d');
+  dashChartInstance = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar', label: '광고비', data: spends,
+          backgroundColor: 'rgba(79,142,247,0.4)', borderColor: '#4F8EF7',
+          borderWidth: 1.5, borderRadius: 4, yAxisID: 'yMoney', order: 2,
+        },
+        {
+          type: 'bar', label: '매출', data: revenues,
+          backgroundColor: 'rgba(52,199,89,0.35)', borderColor: '#34C759',
+          borderWidth: 1.5, borderRadius: 4, yAxisID: 'yMoney', order: 3,
+        },
+        {
+          type: 'line', label: 'ROAS', data: roasArr,
+          borderColor: '#F4A030', backgroundColor: 'rgba(244,160,48,0.12)',
+          borderWidth: 2.5, pointRadius: 3.5,
+          pointBackgroundColor: '#F4A030', pointBorderColor: '#F4A030',
+          tension: 0.35, yAxisID: 'yROAS', spanGaps: true, order: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1E2230', borderColor: '#2A2E3E', borderWidth: 1,
+          titleColor: '#7A8099', bodyColor: '#E8EAF0', padding: 12,
+          callbacks: {
+            label(ctx) {
+              if (ctx.dataset.label === 'ROAS')
+                return ctx.parsed.y != null ? ` ROAS  ${ctx.parsed.y.toLocaleString('ko-KR')}%` : ' ROAS  -';
+              return ` ${ctx.dataset.label}  ₩${Number(ctx.parsed.y).toLocaleString('ko-KR')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#464D66', font: { size: 10 }, maxTicksLimit: 16, maxRotation: 0 },
+          border: { color: '#2A2E3E' },
+        },
+        yMoney: {
+          type: 'linear', position: 'left',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#464D66', font: { size: 10 },
+            callback: v => v === 0 ? '0' : v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v,
+          },
+          border: { color: '#2A2E3E' },
+        },
+        yROAS: {
+          type: 'linear', position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#F4A030', font: { size: 10 }, callback: v => fmtMoney(v) + '%' },
+          border: { color: '#2A2E3E' },
+        },
+      }
+    }
+  });
+}
+
+function renderChart(mediaId, days, data, mediaColor) {
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const labels = [], spends = [], revenues = [], roasArr = [];
+  for (let d = 1; d <= days; d++) {
+    labels.push(`${d}일`);
+    const r       = data[String(d)] || {};
+    const spend   = r.spend   !== '' && r.spend   != null ? Number(r.spend)   : 0;
+    const revenue = r.revenue !== '' && r.revenue != null ? Number(r.revenue) : 0;
+    spends.push(spend);
+    revenues.push(revenue);
+    roasArr.push(calcROAS(revenue, spend));
+  }
+
+  const ctx = document.getElementById('mediaChart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: '광고비',
+          data: spends,
+          backgroundColor: mediaColor + '66',
+          borderColor: mediaColor,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          yAxisID: 'yMoney',
+          order: 2,
+        },
+        {
+          type: 'bar',
+          label: '매출',
+          data: revenues,
+          backgroundColor: 'rgba(52,199,89,0.35)',
+          borderColor: '#34C759',
+          borderWidth: 1.5,
+          borderRadius: 4,
+          yAxisID: 'yMoney',
+          order: 3,
+        },
+        {
+          type: 'line',
+          label: 'ROAS',
+          data: roasArr,
+          borderColor: '#F4A030',
+          backgroundColor: 'rgba(244,160,48,0.12)',
+          borderWidth: 2.5,
+          pointRadius: 3.5,
+          pointBackgroundColor: '#F4A030',
+          pointBorderColor: '#F4A030',
+          tension: 0.35,
+          yAxisID: 'yROAS',
+          spanGaps: true,
+          order: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1E2230',
+          borderColor: '#2A2E3E',
+          borderWidth: 1,
+          titleColor: '#7A8099',
+          bodyColor: '#E8EAF0',
+          padding: 12,
+          callbacks: {
+            label(ctx) {
+              if (ctx.dataset.label === 'ROAS') {
+                return ctx.parsed.y != null ? ` ROAS  ${ctx.parsed.y.toLocaleString('ko-KR')}%` : ' ROAS  -';
+              }
+              return ` ${ctx.dataset.label}  ₩${Number(ctx.parsed.y).toLocaleString('ko-KR')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#464D66', font: { size: 10 },
+            maxTicksLimit: 16, maxRotation: 0,
+          },
+          border: { color: '#2A2E3E' },
+        },
+        yMoney: {
+          type: 'linear', position: 'left',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#464D66', font: { size: 10 },
+            callback: v => v === 0 ? '0' : (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v),
+          },
+          border: { color: '#2A2E3E' },
+        },
+        yROAS: {
+          type: 'linear', position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: '#F4A030', font: { size: 10 },
+            callback: v => fmtMoney(v) + '%',
+          },
+          border: { color: '#2A2E3E' },
+        },
+      }
+    }
+  });
+}
+
+function setMediaChartMode(mode) {
+  mediaChartMode = mode;
+  document.querySelectorAll('.media-toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  const media = MEDIA.find(m => m.id === curTab);
+  const days  = daysInMonth(curYear, curMonth);
+  const data  = loadData(curYear, curMonth, curTab);
+  renderChart(curTab, days, data, media.color);
+}
+
+function setDashChartMode(mode) {
+  dashChartMode = mode;
+  document.querySelectorAll('.dash-toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  renderDashboardChart(daysInMonth(curYear, curMonth));
+}
+
+/* ══════════════════════════════════════════════
+   LOCK / PASSWORD
+══════════════════════════════════════════════ */
+function updateLockUI() {
+  const btn  = document.getElementById('lockBtn');
+  const text = document.getElementById('lockBtnText');
+  if (isUnlocked) {
+    btn.classList.add('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔓';
+    text.textContent = '편집 중';
+  } else {
+    btn.classList.remove('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔒';
+    text.textContent = '잠금';
+  }
+  // re-render if on a media tab to apply disabled state
+  if (curTab !== 'dashboard') render();
+}
+
+function onLockBtnClick() {
+  if (isUnlocked) {
+    // lock
+    isUnlocked = false;
+    updateLockUI();
+  } else {
+    openModal();
+  }
+}
+
+function openModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('open');
+  const input = document.getElementById('pwInput');
+  input.value = '';
+  input.classList.remove('error');
+  document.getElementById('pwError').textContent = '';
+  setTimeout(() => input.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function clearError() {
+  document.getElementById('pwInput').classList.remove('error');
+  document.getElementById('pwError').textContent = '';
+}
+
+function submitPassword() {
+  const input = document.getElementById('pwInput');
+  const val   = input.value;
+  if (val === EDIT_PASSWORD) {
+    isUnlocked = true;
+    closeModal();
+    updateLockUI();
+  } else {
+    input.classList.add('error');
+    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+function showLoading() {
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--text-mute);font-size:13px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      데이터 불러오는 중...
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+updateMonthLabel();
+showLoading();
+(async () => {
+  await fetchAllData();
+  render();
+})();
+</script>
+</body>
+</html>

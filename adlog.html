@@ -471,6 +471,10 @@ tfoot td.total-cpa { color: var(--accent); }
 .creative-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .creative-meta { display: flex; align-items: center; justify-content: space-between; }
 .creative-date { font-size: 11px; color: var(--text-mute); }
+.creative-actions { display: flex; gap: 6px; }
+.creative-edit { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; opacity: 0; }
+.creative-card:hover .creative-edit { opacity: 1; }
+.creative-edit:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
 .creative-del { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; opacity: 0; }
 .creative-card:hover .creative-del { opacity: 1; }
 .creative-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
@@ -1214,6 +1218,17 @@ async function saveCreative(year, month, mediaId, item) {
   return newItem;
 }
 
+async function updateCreative(year, month, mediaId, key, item) {
+  const path = `creatives/${year}/${String(month).padStart(2,'0')}/${mediaId}/${key}`;
+  await db.ref(path).set(item);
+  const list = loadCreatives(year, month, mediaId);
+  const index = list.findIndex(i => i._key === key);
+  if (index !== -1) {
+    list[index] = { ...item, _key: key };
+    creativeCache[creativeCacheKey(year, month, mediaId)] = list;
+  }
+}
+
 async function deleteCreative(year, month, mediaId, key) {
   const path = `creatives/${year}/${String(month).padStart(2,'0')}/${mediaId}/${key}`;
   await db.ref(path).remove();
@@ -1259,7 +1274,10 @@ function renderCreativeGalleryContent(mediaId, media, list) {
               <div class="creative-title">${escHtml(item.title)}</div>
               <div class="creative-meta">
                 <span class="creative-date">${item.addedAt || ''}</span>
-                ${isUnlocked ? `<button class="creative-del" onclick="event.stopPropagation();deletCreative('${mediaId}','${item._key}')" title="삭제">✕</button>` : ''}
+                ${isUnlocked ? `<div class="creative-actions">
+                  <button class="creative-edit" onclick="event.stopPropagation();openEditCreativeModal('${mediaId}','${item._key}','${escHtml(item.campaign)}','${escHtml(item.title)}','${escHtml(item.url)}')" title="수정">✏️</button>
+                  <button class="creative-del" onclick="event.stopPropagation();deletCreative('${mediaId}','${item._key}')" title="삭제">✕</button>
+                </div>` : ''}
               </div>
             </div>
           </div>`;
@@ -1311,6 +1329,33 @@ function openAddCreativeModal(mediaId) {
   setTimeout(() => document.getElementById('c_campaign')?.focus(), 100);
 }
 
+function openEditCreativeModal(mediaId, key, campaign, title, url) {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.innerHTML = `
+    <div class="add-modal">
+      <div class="add-modal-title">✏️ 소재 수정</div>
+      <div class="form-field">
+        <label class="form-label">캠페인명</label>
+        <input class="form-input" id="c_campaign" type="text" placeholder="예: 봄 신규 캠페인" maxlength="50" value="${campaign}">
+      </div>
+      <div class="form-field">
+        <label class="form-label">소재 제목</label>
+        <input class="form-input" id="c_title" type="text" placeholder="예: 메인 배너 A" maxlength="50" value="${title}">
+      </div>
+      <div class="form-field">
+        <label class="form-label">이미지 URL</label>
+        <input class="form-input" id="c_url" type="url" placeholder="https://drive.google.com/file/d/..." value="${url}">
+        <div class="form-hint">구글 드라이브 링크를 붙여넣으면 자동 변환됩니다</div>
+      </div>
+      <div class="modal-btns" style="margin-top:8px;">
+        <button class="modal-btn cancel" onclick="closeAddCreativeModal()">취소</button>
+        <button class="modal-btn confirm" onclick="submitEditCreative('${mediaId}','${key}')">수정</button>
+      </div>
+    </div>`;
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('c_campaign')?.focus(), 100);
+}
+
 function closeAddCreativeModal() {
   const overlay = document.getElementById('modalOverlay');
   overlay.classList.remove('open');
@@ -1337,6 +1382,16 @@ async function submitCreative(mediaId) {
   const addedAt = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
   closeAddCreativeModal();
   await saveCreative(curYear, curMonth, mediaId, { campaign, title, url, addedAt });
+  renderCreativeGallery(mediaId);
+}
+
+async function submitEditCreative(mediaId, key) {
+  const campaign = document.getElementById('c_campaign')?.value.trim();
+  const title    = document.getElementById('c_title')?.value.trim();
+  const url      = document.getElementById('c_url')?.value.trim();
+  if (!campaign || !title || !url) { alert('모든 항목을 입력해주세요'); return; }
+  closeAddCreativeModal();
+  await updateCreative(curYear, curMonth, mediaId, key, { campaign, title, url });
   renderCreativeGallery(mediaId);
 }
 

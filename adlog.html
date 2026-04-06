@@ -1267,7 +1267,12 @@ async function renderCreativeGallery(mediaId) {
       </svg>불러오는 중...
     </div>`;
   const list = await fetchCreatives(curYear, curMonth, mediaId);
-  renderCreativeGalleryContent(mediaId, media, list);
+  try {
+    renderCreativeGalleryContent(mediaId, media, list);
+  } catch(e) {
+    console.error('갤러리 렌더링 오류:', e);
+    document.getElementById('content').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-mute);">불러오는 중 오류가 발생했습니다. 새로고침 해주세요.</div>';
+  }
 }
 
 function renderCreativeGalleryContent(mediaId, media, list) {
@@ -1302,7 +1307,7 @@ function renderCreativeGalleryContent(mediaId, media, list) {
     </div>
     <div class="creative-toolbar">
       <div style="font-size:13px;color:var(--text-mute);">총 ${list.length}개의 소재</div>
-      ${isUnlocked ? `<button class="manage-creative-btn" onclick="openManageCreativeModal('${mediaId}')">⚙️ 소재 관리</button>` : '<div style="font-size:12px;color:var(--text-mute);">🔒 편집하려면 잠금을 해제하세요</div>'}
+      ${isUnlocked ? `<button class="manage-creative-btn" onclick="openAddCreativeModal('${mediaId}')">＋ 소재 추가</button><button class="manage-creative-btn" style="margin-left:8px;background:var(--red-dim);border-color:var(--red);color:var(--red);" onclick="openDeleteCreativeModal('${mediaId}')">🗑 삭제</button>` : '<div style="font-size:12px;color:var(--text-mute);">🔒 편집하려면 잠금을 해제하세요</div>'}
     </div>
     <div class="creative-grid">${cardsHtml}</div>`;
 }
@@ -1431,6 +1436,38 @@ async function submitEditCreative(mediaId, key) {
   if (!campaign || !title || !url) { alert('모든 항목을 입력해주세요'); return; }
   closeAddCreativeModal();
   await updateCreative(curYear, curMonth, mediaId, key, { campaign, title, url });
+  renderCreativeGallery(mediaId);
+}
+
+function openDeleteCreativeModal(mediaId) {
+  const list = loadCreatives(curYear, curMonth, mediaId);
+  if (list.length === 0) { alert('삭제할 소재가 없습니다.'); return; }
+  const overlay = document.getElementById('modalOverlay');
+  const itemsHtml = list.map(item => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:8px;">
+      <input type="checkbox" data-key="${item._key}" style="width:16px;height:16px;">
+      <span style="font-size:13px;color:var(--text);">[${item.campaign}] ${item.title}</span>
+    </label>`).join('');
+  overlay.innerHTML = `
+    <div class="add-modal">
+      <div class="add-modal-title">🗑 소재 삭제</div>
+      <div style="max-height:300px;overflow-y:auto;margin-bottom:20px;">${itemsHtml}</div>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" onclick="closeAddCreativeModal()">취소</button>
+        <button class="modal-btn confirm" style="background:var(--red);" onclick="confirmDeleteCreatives('${mediaId}')">삭제</button>
+      </div>
+    </div>`;
+  overlay.classList.add('open');
+}
+
+async function confirmDeleteCreatives(mediaId) {
+  const checked = document.querySelectorAll('#modalOverlay input[type=checkbox]:checked');
+  if (checked.length === 0) { alert('삭제할 소재를 선택해주세요.'); return; }
+  if (!confirm(checked.length + '개를 삭제하시겠습니까?')) return;
+  for (const cb of checked) {
+    await deleteCreative(curYear, curMonth, mediaId, cb.dataset.key);
+  }
+  closeAddCreativeModal();
   renderCreativeGallery(mediaId);
 }
 

@@ -439,7 +439,7 @@ tfoot td.total-cpa { color: var(--accent); }
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
 }
-.add-creative-btn {
+.manage-creative-btn {
   display: flex; align-items: center; gap: 7px;
   padding: 9px 18px; border-radius: 10px;
   border: 1px solid var(--accent);
@@ -448,7 +448,7 @@ tfoot td.total-cpa { color: var(--accent); }
   font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.15s ease;
 }
-.add-creative-btn:hover { background: var(--accent); color: white; }
+.manage-creative-btn:hover { background: var(--accent); color: white; }
 .creative-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -471,13 +471,6 @@ tfoot td.total-cpa { color: var(--accent); }
 .creative-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .creative-meta { display: flex; align-items: center; justify-content: space-between; }
 .creative-date { font-size: 11px; color: var(--text-mute); }
-.creative-actions { display: flex; gap: 6px; }
-.creative-edit { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; opacity: 0; }
-.creative-card:hover .creative-actions .creative-edit { opacity: 1; }
-.creative-edit:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
-.creative-del { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; opacity: 0; }
-.creative-card:hover .creative-actions .creative-del { opacity: 1; }
-.creative-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 .add-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 460px; box-shadow: 0 32px 80px rgba(0,0,0,0.4); animation: slideUp 0.25s ease; }
 .add-modal-title { font-size: 16px; font-weight: 700; margin-bottom: 24px; }
 .form-field { margin-bottom: 16px; }
@@ -486,6 +479,26 @@ tfoot td.total-cpa { color: var(--accent); }
 .form-input:focus { border-color: var(--accent); }
 .form-input::placeholder { color: var(--text-mute); }
 .form-hint { font-size: 11px; color: var(--text-mute); margin-top: 5px; }
+.manage-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 32px 80px rgba(0,0,0,0.4); animation: slideUp 0.25s ease; }
+.manage-modal-title { font-size: 16px; font-weight: 700; margin-bottom: 24px; text-align: center; }
+.manage-options { display: flex; flex-direction: column; gap: 12px; }
+.manage-option { padding: 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.manage-option:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+.manage-option-icon { font-size: 20px; margin-bottom: 8px; }
+.manage-option-title { font-size: 14px; font-weight: 600; }
+.manage-option-desc { font-size: 12px; color: var(--text-mute); margin-top: 4px; }
+.select-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.4); animation: slideUp 0.25s ease; }
+.select-modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+.select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.select-card { background: var(--surface2); border: 2px solid transparent; border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.15s ease; position: relative; }
+.select-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+.select-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+.select-card.selected::after { content: '✓'; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+.select-card-img { width: 100%; aspect-ratio: 1/1; background: var(--surface); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 8px; }
+.select-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.select-card-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-card-campaign { font-size: 10px; color: var(--text-mute); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-actions { display: flex; gap: 8px; justify-content: center; }
 .img-modal-overlay { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
 .img-modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
 .img-modal-inner { position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; gap: 16px; }
@@ -1274,10 +1287,6 @@ function renderCreativeGalleryContent(mediaId, media, list) {
               <div class="creative-title">${escHtml(item.title)}</div>
               <div class="creative-meta">
                 <span class="creative-date">${item.addedAt || ''}</span>
-                ${isUnlocked ? `<div class="creative-actions">
-                  <button class="creative-edit" onclick="event.stopPropagation();openEditCreativeModal('${mediaId}','${item._key}','${escHtml(item.campaign)}','${escHtml(item.title)}','${escHtml(item.url)}')" title="수정">✏️</button>
-                  <button class="creative-del" onclick="event.stopPropagation();deletCreative('${mediaId}','${item._key}')" title="삭제">✕</button>
-                </div>` : ''}
               </div>
             </div>
           </div>`;
@@ -1293,13 +1302,43 @@ function renderCreativeGalleryContent(mediaId, media, list) {
     </div>
     <div class="creative-toolbar">
       <div style="font-size:13px;color:var(--text-mute);">총 ${list.length}개의 소재</div>
-      ${isUnlocked ? `<button class="add-creative-btn" onclick="openAddCreativeModal('${mediaId}')">＋ 소재 추가</button>` : '<div style="font-size:12px;color:var(--text-mute);">🔒 편집하려면 잠금을 해제하세요</div>'}
+      ${isUnlocked ? `<button class="manage-creative-btn" onclick="openManageCreativeModal('${mediaId}')">⚙️ 소재 관리</button>` : '<div style="font-size:12px;color:var(--text-mute);">🔒 편집하려면 잠금을 해제하세요</div>'}
     </div>
     <div class="creative-grid">${cardsHtml}</div>`;
 }
 
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function toggleCreativeSelection(card) {
+  card.classList.toggle('selected');
+}
+
+async function confirmCreativeAction(mediaId, action) {
+  const selectedCards = document.querySelectorAll('.select-card.selected');
+  if (selectedCards.length === 0) {
+    alert('소재를 선택해주세요.');
+    return;
+  }
+
+  if (action === 'edit') {
+    if (selectedCards.length > 1) {
+      alert('수정은 한 개의 소재만 선택해주세요.');
+      return;
+    }
+    const key = selectedCards[0].dataset.key;
+    const list = loadCreatives(curYear, curMonth, mediaId);
+    const item = list.find(i => i._key === key);
+    if (item) {
+      closeAddCreativeModal();
+      openEditCreativeModal(mediaId, key, item.campaign, item.title, item.url);
+    }
+  } else if (action === 'delete') {
+    if (!confirm(`${selectedCards.length}개의 소재를 삭제하시겠습니까?`)) return;
+    const keys = Array.from(selectedCards).map(card => card.dataset.key);
+    for (const key of keys) {
+      await deleteCreative(curYear, curMonth, mediaId, key);
+    }
+    closeAddCreativeModal();
+    renderCreativeGallery(mediaId);
+  }
 }
 
 function openAddCreativeModal(mediaId) {

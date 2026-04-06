@@ -1213,12 +1213,17 @@ function loadCreatives(year, month, mediaId) {
 }
 
 async function fetchCreatives(year, month, mediaId) {
-  const path = `creatives/${year}/${String(month).padStart(2,'0')}/${mediaId}`;
-  const snap = await db.ref(path).once('value');
-  const val  = snap.val();
-  const list = val ? Object.entries(val).map(([k,v]) => ({ ...v, _key: k })) : [];
-  creativeCache[creativeCacheKey(year, month, mediaId)] = list;
-  return list;
+  try {
+    const path = `creatives/${year}/${String(month).padStart(2,'0')}/${mediaId}`;
+    const snap = await db.ref(path).once('value');
+    const val  = snap.val();
+    const list = val ? Object.entries(val).map(([k,v]) => ({ ...v, _key: k })) : [];
+    creativeCache[creativeCacheKey(year, month, mediaId)] = list;
+    return list;
+  } catch(e) {
+    console.error('Firebase 데이터 조회 오류:', e);
+    return [];
+  }
 }
 
 async function saveCreative(year, month, mediaId, item) {
@@ -1266,7 +1271,13 @@ async function renderCreativeGallery(mediaId) {
         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
       </svg>불러오는 중...
     </div>`;
-  const list = await fetchCreatives(curYear, curMonth, mediaId);
+  let list = [];
+  try {
+    list = await fetchCreatives(curYear, curMonth, mediaId);
+  } catch(e) {
+    console.error('소재 데이터 불러오기 오류:', e);
+    list = [];
+  }
   try {
     renderCreativeGalleryContent(mediaId, media, list);
   } catch(e) {
@@ -1276,26 +1287,34 @@ async function renderCreativeGallery(mediaId) {
 }
 
 function renderCreativeGalleryContent(mediaId, media, list) {
-  const cardsHtml = list.length === 0
-    ? `<div class="creative-empty"><div class="creative-empty-icon">🖼️</div><div>등록된 소재가 없습니다</div></div>`
-    : list.map(item => {
+  let cardsHtml = '';
+  if (list.length === 0) {
+    cardsHtml = `<div class="creative-empty"><div class="creative-empty-icon">🖼️</div><div>등록된 소재가 없습니다</div></div>`;
+  } else {
+    cardsHtml = list.map(item => {
+      try {
         const imgUrl = toDirectImageUrl(item.url);
         return `
-          <div class="creative-card" onclick="openImgModal('${imgUrl}','${escHtml(item.title)}','${escHtml(item.campaign)}')">
+          <div class="creative-card" onclick="openImgModal('${imgUrl}','${escHtml(item.title || '')}','${escHtml(item.campaign || '')}')">
             <div class="creative-img-wrap">
-              <img src="${imgUrl}" alt="${escHtml(item.title)}"
+              <img src="${imgUrl}" alt="${escHtml(item.title || '')}"
                 onerror="this.parentElement.innerHTML='<div class=\\"creative-img-error\\"><span style=\\"font-size:28px;opacity:0.4\\">🔗</span><span>이미지를 불러올 수 없습니다</span></div>'"
               >
             </div>
             <div class="creative-info">
-              <div class="creative-campaign">${escHtml(item.campaign)}</div>
-              <div class="creative-title">${escHtml(item.title)}</div>
+              <div class="creative-campaign">${escHtml(item.campaign || '')}</div>
+              <div class="creative-title">${escHtml(item.title || '')}</div>
               <div class="creative-meta">
                 <span class="creative-date">${item.addedAt || ''}</span>
               </div>
             </div>
           </div>`;
-      }).join('');
+      } catch(e) {
+        console.error('소재 카드 렌더링 오류:', e, item);
+        return ''; // 오류난 카드는 표시하지 않음
+      }
+    }).filter(html => html).join(''); // 빈 문자열 필터링
+  }
 
   document.getElementById('content').innerHTML = `
     <div class="section-header">

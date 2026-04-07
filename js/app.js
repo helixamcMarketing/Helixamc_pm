@@ -471,3 +471,108 @@ function renderDashboardChart(days) {
     labels = monthly.map(m => m.label); spends = monthly.map(m => m.spend);
     revenues = monthly.map(m => m.revenue); roasArr = monthly.map(m => m.roas);
   } else {
+    labels=[]; spends=[]; revenues=[]; roasArr=[];
+    for (let d=1; d<=days; d++) {
+      labels.push(`${d}일`);
+      let ts=0, tr=0;
+      MEDIA.forEach(m => {
+        const data = loadData(curYear, curMonth, m.id);
+        const r = data[String(d)] || {};
+        if (r.spend   !== '' && r.spend   != null) ts += Number(r.spend);
+        if (r.revenue !== '' && r.revenue != null) tr += Number(r.revenue);
+      });
+      spends.push(ts); revenues.push(tr); roasArr.push(calcROAS(tr, ts));
+    }
+  }
+  const ctx = document.getElementById('dashChart').getContext('2d');
+  dashChartInstance = new Chart(ctx, {
+    data: { labels, datasets: [
+      { type:'bar', label:'광고비', data:spends, backgroundColor:'rgba(79,142,247,0.4)', borderColor:'#4F8EF7', borderWidth:1.5, borderRadius:4, yAxisID:'yMoney', order:2 },
+      { type:'bar', label:'매출',   data:revenues, backgroundColor:'rgba(52,199,89,0.35)', borderColor:'#34C759', borderWidth:1.5, borderRadius:4, yAxisID:'yMoney', order:3 },
+      { type:'line', label:'ROAS', data:roasArr, borderColor:'#F4A030', backgroundColor:'rgba(244,160,48,0.12)', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:'#F4A030', tension:0.35, yAxisID:'yROAS', spanGaps:true, order:1 },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'#1E2230', borderColor:'#2A2E3E', borderWidth:1, titleColor:'#7A8099', bodyColor:'#E8EAF0', padding:12,
+          callbacks:{ label(ctx) {
+            if (ctx.dataset.label==='ROAS') return ctx.parsed.y!=null ? ` ROAS  ${ctx.parsed.y.toLocaleString('ko-KR')}%` : ' ROAS  -';
+            return ` ${ctx.dataset.label}  ₩${Number(ctx.parsed.y).toLocaleString('ko-KR')}`;
+          }}
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#464D66',font:{size:10},maxTicksLimit:16,maxRotation:0}, border:{color:'#2A2E3E'} },
+        yMoney: { type:'linear', position:'left', grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#464D66',font:{size:10}, callback:v=>v===0?'0':v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v}, border:{color:'#2A2E3E'} },
+        yROAS:  { type:'linear', position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#F4A030',font:{size:10},callback:v=>fmtMoney(v)+'%'}, border:{color:'#2A2E3E'} },
+      }
+    }
+  });
+}
+
+function setDashChartMode(mode) {
+  dashChartMode = mode;
+  document.querySelectorAll('.dash-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.mode===mode));
+  renderDashboardChart(daysInMonth(curYear, curMonth));
+}
+
+function updateLockUI() {
+  const btn = document.getElementById('lockBtn');
+  const text = document.getElementById('lockBtnText');
+  if (isUnlocked) {
+    btn.classList.add('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔓';
+    text.textContent = '편집 중';
+  } else {
+    btn.classList.remove('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔒';
+    text.textContent = 'LOCK';
+  }
+  if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') render();
+}
+function onLockBtnClick() {
+  if (isUnlocked) { isUnlocked = false; updateLockUI(); }
+  else openModal();
+}
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  const input = document.getElementById('pwInput');
+  input.value = ''; input.classList.remove('error');
+  document.getElementById('pwError').textContent = '';
+  setTimeout(() => input.focus(), 100);
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function onOverlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+function clearError() { document.getElementById('pwInput').classList.remove('error'); document.getElementById('pwError').textContent = ''; }
+function submitPassword() {
+  const input = document.getElementById('pwInput');
+  if (input.value === EDIT_PASSWORD) {
+    isUnlocked = true; closeModal(); updateLockUI();
+  } else {
+    input.classList.add('error');
+    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+function showLoading() {
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--text-mute);font-size:13px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      데이터 불러오는 중...
+    </div>`;
+}
+
+buildSidebar();
+updateBreadcrumb();
+updateMonthLabel();
+showLoading();
+(async () => {
+  await fetchAllData();
+  render();
+})();

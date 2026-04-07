@@ -43,6 +43,7 @@ let curPageId  = 'adlog_dashboard';
 let isUnlocked = false;
 let sidebarCollapsed = false;
 let openSections = { adlog: true };
+let dashView = 'monthly'; // 'monthly' | 'annual'
 
 /* ══════════════════════════════════════════════
    FIREBASE
@@ -355,6 +356,25 @@ function recalcFooter(mediaId) {
    DASHBOARD
 ══════════════════════════════════════════════ */
 function renderDashboard() {
+  const badge = dashView === 'monthly'
+    ? `${curYear}.${String(curMonth).padStart(2,'0')}`
+    : `${curYear}년`;
+
+  const toggleHtml = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">대시보드 <span class="section-badge">${badge}</span></div>
+      <div style="display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;">
+        <button class="chart-toggle-btn ${dashView==='monthly'?'active':''}" onclick="setDashView('monthly')">월간</button>
+        <button class="chart-toggle-btn ${dashView==='annual'?'active':''}" onclick="setDashView('annual')">연간</button>
+      </div>
+    </div>`;
+
+  if (dashView === 'annual') {
+    document.getElementById('content').innerHTML = toggleHtml + '<div id="annualContent"></div>';
+    renderAnnualDashboard();
+    return;
+  }
+
   const days = daysInMonth(curYear, curMonth);
   let grandSpend=0, grandDB=0, grandRevenue=0;
   const summaries = MEDIA.map(m => {
@@ -391,10 +411,7 @@ function renderDashboard() {
       <td style="color:${s.roas?(Number(s.roas)>=100?'var(--accent)':'var(--red)'):'var(--text-mute)'}">${s.roas ? fmtMoney(s.roas)+'%' : '-'}</td>
     </tr>`).join('');
 
-  document.getElementById('content').innerHTML = `
-    <div class="section-header">
-      <div class="section-title">대시보드 <span class="section-badge">${curYear}.${String(curMonth).padStart(2,'0')}</span></div>
-    </div>
+  document.getElementById('content').innerHTML = toggleHtml + `
     ${kpiHtml}
     <div class="chart-wrap">
       <div class="chart-title">
@@ -432,6 +449,127 @@ function renderDashboard() {
     </div>`;
 
   setTimeout(() => renderDashboardChart(days), 50);
+}
+
+function setDashView(view) {
+  dashView = view;
+  renderDashboard();
+}
+
+function renderAnnualDashboard() {
+  let totalSpend = 0, totalDB = 0, totalRevenue = 0;
+  const monthlyStats = [];
+
+  for (let mo = 1; mo <= 12; mo++) {
+    let spend = 0, db = 0, revenue = 0;
+    MEDIA.forEach(m => {
+      const data = loadData(curYear, mo, m.id);
+      const days = daysInMonth(curYear, mo);
+      for (let d = 1; d <= days; d++) {
+        const r = data[String(d)] || {};
+        if (r.spend   !== '' && r.spend   != null) spend   += Number(r.spend);
+        if (r.db      !== '' && r.db      != null) db      += Number(r.db);
+        if (r.revenue !== '' && r.revenue != null) revenue += Number(r.revenue);
+      }
+    });
+    totalSpend   += spend;
+    totalDB      += db;
+    totalRevenue += revenue;
+    monthlyStats.push({ mo, spend, db, revenue, roas: calcROAS(revenue, spend) });
+  }
+
+  const totalCPA  = calcCPA(totalSpend, totalDB);
+  const totalROAS = calcROAS(totalRevenue, totalSpend);
+
+  const kpiHtml = `<div class="dash-grid">
+    <div class="kpi-card"><div class="kpi-label">연간 소진 광고비</div><div class="kpi-value">${totalSpend ? fmtMoney(totalSpend) : '0'}</div><div class="kpi-sub">₩ · ${curYear}년</div></div>
+    <div class="kpi-card"><div class="kpi-label">연간 유입 DB</div><div class="kpi-value">${totalDB ? fmtMoney(totalDB) : '0'}</div><div class="kpi-sub">건 · ${curYear}년</div></div>
+    <div class="kpi-card"><div class="kpi-label">평균 DB 단가</div><div class="kpi-value" style="color:var(--accent)">${totalCPA ? fmtMoney(totalCPA) : '-'}</div><div class="kpi-sub">₩ / 건</div></div>
+    <div class="kpi-card"><div class="kpi-label">연간 매출</div><div class="kpi-value">${totalRevenue ? fmtMoney(totalRevenue) : '0'}</div><div class="kpi-sub">₩ · ${curYear}년</div></div>
+    <div class="kpi-card"><div class="kpi-label">연간 ROAS</div><div class="kpi-value" style="color:${totalROAS&&Number(totalROAS)>=100?'var(--accent)':'var(--red)'}">${totalROAS ? fmtMoney(totalROAS)+'%' : '-'}</div><div class="kpi-sub">매출 ÷ 광고비</div></div>
+    <div class="kpi-card"><div class="kpi-label">집행 월 수</div><div class="kpi-value">${monthlyStats.filter(m=>m.spend>0).length}</div><div class="kpi-sub">/ 12개월</div></div>
+  </div>`;
+
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const monthlyRows = monthlyStats.map(m => `
+    <tr style="${m.mo === curMonth ? 'background:var(--accent-dim);' : ''}">
+      <td style="text-align:left;padding:12px 20px;font-family:var(--font-mono);font-size:13px;font-weight:600;">${monthNames[m.mo-1]}</td>
+      <td>${m.spend   ? fmtMoney(m.spend)   : '-'}</td>
+      <td>${m.db      ? fmtMoney(m.db)      : '-'}</td>
+      <td style="color:${m.roas?(Number(m.roas)>=100?'var(--accent)':'var(--red)'):'var(--text-mute)'}">${m.roas ? fmtMoney(m.roas)+'%' : '-'}</td>
+      <td>${m.revenue ? fmtMoney(m.revenue) : '-'}</td>
+    </tr>`).join('');
+
+  const content = document.getElementById('content');
+  const labels    = monthNames;
+  const spends    = monthlyStats.map(m => m.spend);
+  const revenues  = monthlyStats.map(m => m.revenue);
+  const roasArr   = monthlyStats.map(m => m.roas);
+
+  content.querySelector('#annualKpi')          && (content.querySelector('#annualKpi').outerHTML = kpiHtml);
+  content.querySelector('#annualMonthlyRows')  && (content.querySelector('#annualMonthlyRows').innerHTML = monthlyRows);
+
+  document.getElementById('annualContent').innerHTML = `
+    ${kpiHtml}
+    <div class="chart-wrap" style="margin-bottom:20px;">
+      <div class="chart-title">
+        <div class="chart-title-left">${curYear}년 월별 추이
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-bar" style="background:#4F8EF7"></div>광고비</div>
+            <div class="legend-item"><div class="legend-bar" style="background:#34C759"></div>매출</div>
+            <div class="legend-item"><div class="legend-line" style="background:#F4A030"></div>ROAS</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="annualChart"></canvas></div>
+    </div>
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title" style="font-size:14px;color:var(--text-sub);">월별 합계</div>
+    </div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead><tr><th style="text-align:left;">월</th><th>소진 광고비 (₩)</th><th>유입 DB (건)</th><th>ROAS</th><th>매출 (₩)</th></tr></thead>
+        <tbody>${monthlyRows}</tbody>
+        <tfoot><tr>
+          <td style="text-align:left;padding:13px 20px;font-size:11px;color:var(--text-sub);">연간 합계</td>
+          <td>${totalSpend   ? fmtMoney(totalSpend)   : '-'}</td>
+          <td>${totalDB      ? fmtMoney(totalDB)      : '-'}</td>
+          <td>${totalROAS    ? fmtMoney(totalROAS)+'%' : '-'}</td>
+          <td>${totalRevenue ? fmtMoney(totalRevenue) : '-'}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+
+  setTimeout(() => {
+    if (dashChartInstance) { dashChartInstance.destroy(); dashChartInstance = null; }
+    const ctx = document.getElementById('annualChart')?.getContext('2d');
+    if (!ctx) return;
+    dashChartInstance = new Chart(ctx, {
+      data: { labels, datasets: [
+        { type:'bar', label:'광고비', data:spends, backgroundColor:'rgba(79,142,247,0.4)', borderColor:'#4F8EF7', borderWidth:1.5, borderRadius:4, yAxisID:'yMoney', order:2 },
+        { type:'bar', label:'매출', data:revenues, backgroundColor:'rgba(52,199,89,0.35)', borderColor:'#34C759', borderWidth:1.5, borderRadius:4, yAxisID:'yMoney', order:3 },
+        { type:'line', label:'ROAS', data:roasArr, borderColor:'#F4A030', backgroundColor:'rgba(244,160,48,0.12)', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:'#F4A030', tension:0.35, yAxisID:'yROAS', spanGaps:true, order:1 },
+      ]},
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins: {
+          legend:{ display:false },
+          tooltip:{ backgroundColor:'#1E2230', borderColor:'#2A2E3E', borderWidth:1, titleColor:'#7A8099', bodyColor:'#E8EAF0', padding:12,
+            callbacks:{ label(ctx) {
+              if (ctx.dataset.label==='ROAS') return ctx.parsed.y!=null ? ` ROAS  ${ctx.parsed.y.toLocaleString('ko-KR')}%` : ' ROAS  -';
+              return ` ${ctx.dataset.label}  ₩${Number(ctx.parsed.y).toLocaleString('ko-KR')}`;
+            }}
+          }
+        },
+        scales: {
+          x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#464D66',font:{size:10}}, border:{color:'#2A2E3E'} },
+          yMoney: { type:'linear', position:'left', grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#464D66',font:{size:10}, callback:v=>v===0?'0':v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v}, border:{color:'#2A2E3E'} },
+          yROAS: { type:'linear', position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#F4A030',font:{size:10},callback:v=>fmtMoney(v)+'%'}, border:{color:'#2A2E3E'} },
+        }
+      }
+    });
+  }, 50);
 }
 
 /* ══════════════════════════════════════════════

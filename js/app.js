@@ -159,7 +159,12 @@ function updateBreadcrumb() {
    MONTH NAV
 ══════════════════════════════════════════════ */
 function updateMonthLabel() {
-  document.getElementById('monthLabel').textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
+  const label = document.getElementById('monthLabel');
+  if (dashView === 'annual') {
+    label.textContent = `${curYear}년`;
+  } else {
+    label.textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
+  }
   const isCur = curYear === now.getFullYear() && curMonth === now.getMonth() + 1;
   const isMin = curYear === MIN_YEAR && curMonth === MIN_MONTH;
   document.getElementById('nextBtn').style.opacity = isCur ? '0.3' : '1';
@@ -168,6 +173,12 @@ function updateMonthLabel() {
   document.getElementById('prevBtn').style.pointerEvents = isMin ? 'none' : 'auto';
 }
 async function changeMonth(delta) {
+  if (dashView === 'annual') {
+    curYear += delta;
+    updateMonthLabel();
+    renderDashboard();
+    return;
+  }
   curMonth += delta;
   if (curMonth > 12) { curMonth = 1; curYear++; }
   if (curMonth < 1)  { curMonth = 12; curYear--; }
@@ -453,6 +464,7 @@ function renderDashboard() {
 
 function setDashView(view) {
   dashView = view;
+  updateMonthLabel();
   renderDashboard();
 }
 

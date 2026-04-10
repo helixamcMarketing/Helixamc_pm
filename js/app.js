@@ -27,7 +27,7 @@ const MENU = [
     label: '상담 DB',
     icon: '📋',
     items: [
-      { id: 'leads_all', label: '전체 신청자', dot: null },
+      { id: 'leads_list', label: '신청 목록', dot: null },
     ]
   },
 ];
@@ -52,7 +52,6 @@ let isUnlocked = false;
 let sidebarCollapsed = false;
 let openSections = { adlog: true, leads: true };
 let dashView = 'monthly'; // 'monthly' | 'annual'
-let leadsCache = null;
 
 /* ══════════════════════════════════════════════
    FIREBASE
@@ -92,10 +91,6 @@ async function fetchAllData() {
       });
     });
   });
-}
-async function fetchLeadsData() {
-  const snap = await db.ref('leads').once('value');
-  leadsCache = snap.val() || {};
 }
 
 /* ══════════════════════════════════════════════
@@ -250,78 +245,125 @@ async function selectMonth(month) {
 function render() {
   if (curPageId === 'adlog_dashboard') renderDashboard();
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
-  else if (curPageId === 'leads_all') renderLeads();
+  else if (curPageId === 'leads_list') renderLeads();
   else renderComingSoon();
 }
 
 /* ══════════════════════════════════════════════
-   상담 DB
+   LEADS DB
 ══════════════════════════════════════════════ */
 async function renderLeads() {
-  showLoading();
-  await fetchLeadsData();
-
-  // 오름차순(a→b) 정렬
-  const entries = Object.values(leadsCache)
-    .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
-
-  // 이름+연락처 기준 그룹화 — 첫 신청 항목 보존
-  const groupMap = {};
-  entries.forEach(e => {
-    const key = `${e.name}__${e.phone}`;
-    if (!groupMap[key]) groupMap[key] = { entry: e, count: 0 };
-    groupMap[key].count++;
-  });
-
-  // 첫 신청일 기준 오름차순 정렬
-  const rows = Object.values(groupMap)
-    .sort((a, b) => new Date(a.entry.submittedAt) - new Date(b.entry.submittedAt));
-
-  const total      = rows.length;
-  const duplicates = rows.filter(g => g.count > 1).length;
-
-  const tbody = rows.map((g, i) => {
-    const e    = g.entry;
-    const d    = new Date(e.submittedAt);
-    const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-    const badge = g.count > 1
-      ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${g.count}회</span>`
-      : '';
-    const inquiry = (e.inquiry || '').replace(/"/g, '&quot;');
-    return `
-      <tr>
-        <td style="text-align:center;font-size:12px;color:var(--text-mute);">${i + 1}</td>
-        <td>${e.name}${badge}</td>
-        <td style="font-family:var(--font-mono);font-size:12px;">${e.phone || '-'}</td>
-        <td>${e.petType || '-'}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${inquiry}">${e.inquiry || '-'}</td>
-        <td style="font-family:var(--font-mono);font-size:12px;">${dateStr}</td>
-      </tr>`;
-  }).join('');
-
-  const emptyRow = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-mute);">신청자가 없습니다</td></tr>';
+  // 잠금 상태면 비밀번호 요구
+  if (!isUnlocked) {
+    document.getElementById('content').innerHTML = `
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🔒</div>
+        <div class="coming-soon-title">열람 잠금</div>
+        <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">상담 DB를 열람하려면 잠금을 해제해 주세요.</div>
+        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+      </div>`;
+    return;
+  }
 
   document.getElementById('content').innerHTML = `
-    <div class="section-header">
-      <div class="section-title">
-        전체 신청자
-        <span class="section-badge">${total}명</span>
-        ${duplicates > 0 ? `<span class="section-badge" style="background:var(--red-dim);color:var(--red);">중복 ${duplicates}명</span>` : ''}
-      </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">신청 목록 <span class="section-badge" id="leadsBadge">불러오는 중…</span></div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th style="width:50px;">#</th>
-          <th>이름</th>
-          <th>연락처</th>
-          <th>반려동물</th>
-          <th>문의내용</th>
-          <th>신청일</th>
-        </tr></thead>
-        <tbody>${tbody || emptyRow}</tbody>
-      </table>
+    <div class="table-wrap" id="leadsTableWrap">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중…</div>
     </div>`;
+
+    db.ref('leads').off();
+  db.ref('leads').on('value', (snap) => {
+    const val  = snap.val();
+
+    if (!val) {
+      document.getElementById('leadsTableWrap').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">신청 데이터가 없습니다.</div>`;
+      document.getElementById('leadsBadge').textContent = '0건';
+      return;
+    }
+
+    // 오름차순(a→b) 정렬
+    const entries = Object.entries(val).sort((a, b) => a[0].localeCompare(b[0]));
+
+    // 이름+연락처 기준 그룹화 — 첫 신청 항목 보존
+    const groupMap = {};
+    entries.forEach(([key, v]) => {
+      const gKey = `${v.name}__${v.phone}`;
+      if (!groupMap[gKey]) groupMap[gKey] = { key, v, count: 0 };
+      groupMap[gKey].count++;
+    });
+
+    const grouped = Object.values(groupMap);
+    const duplicates = grouped.filter(g => g.count > 1).length;
+    document.getElementById('leadsBadge').textContent =
+      duplicates > 0
+        ? `${grouped.length}명 · 중복 ${duplicates}명`
+        : `${grouped.length}명`;
+
+    const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
+
+    const rows = grouped.map(({ key, v, count }) => {
+      const date = v.submittedAt
+        ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : '-';
+      const badge = count > 1
+        ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${count}회</span>`
+        : '';
+      return `
+        <tr>
+          <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
+          <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
+          <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
+          <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
+          <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
+          <td style="width:80px;text-align:left;">
+            <button onclick="deleteLead('${key}')"
+              style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
+              삭제
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('leadsTableWrap').innerHTML = `
+<table style="table-layout:fixed;width:100%;">
+        <thead><tr>
+          <th style="text-align:left;width:160px;">신청 일시</th>
+          <th style="text-align:left;width:100px;">이름</th>
+          <th style="text-align:left;width:140px;">연락처</th>
+          <th style="text-align:left;width:100px;">반려동물</th>
+          <th style="text-align:left;">문의 내용</th>
+          <th style="text-align:left;width:80px;">삭제</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+}, (e) => {
+    console.error(e);
+    document.getElementById('leadsTableWrap').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--red);font-size:13px;">데이터를 불러오지 못했습니다. Firebase 읽기 규칙을 확인해 주세요.</div>`;
+  });
+}
+
+async function deleteLead(key) {
+  if (!confirm('이 신청 데이터를 삭제하시겠습니까?')) return;
+  await db.ref(`leads/${key}`).remove();
+  renderLeads();
+}
+
+function showInquiry(text) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:480px;width:90%;position:relative;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-sub);margin-bottom:16px;">문의 내용</div>
+      <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-all;">${text}</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="margin-top:24px;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">닫기</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function renderComingSoon() {
@@ -765,6 +807,7 @@ function updateLockUI() {
     text.textContent = 'LOCK';
   }
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') render();
+if (curPageId === 'leads_list') renderLeads();
 }
 function onLockBtnClick() {
   if (isUnlocked) { isUnlocked = false; updateLockUI(); }
@@ -805,7 +848,7 @@ function showLoading() {
 buildSidebar();
 updateBreadcrumb();
 updateMonthLabel();
-showLoading();
+render();
 (async () => {
   await fetchAllData();
   render();

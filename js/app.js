@@ -273,7 +273,6 @@ async function renderLeads() {
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중…</div>
     </div>`;
 
-  try {
     db.ref('leads').off();
   db.ref('leads').on('value', (snap) => {
     const val  = snap.val();

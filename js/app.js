@@ -777,6 +777,7 @@ function updateLockUI() {
     text.textContent = 'LOCK';
   }
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') render();
+if (curPageId === 'leads_list') renderLeads();
 }
 function onLockBtnClick() {
   if (isUnlocked) { isUnlocked = false; updateLockUI(); }

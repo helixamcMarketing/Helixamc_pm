@@ -294,14 +294,14 @@ async function renderLeads() {
       const date = v.submittedAt
         ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
         : '-';
-      return `
+return `
         <tr>
-          <td style="font-size:12px;color:var(--text-sub);">${date}</td>
-          <td style="font-weight:600;">${v.name || '-'}</td>
-          <td style="font-family:var(--font-mono);">${v.phone || '-'}</td>
-          <td>${petTypeLabel[v.petType] || v.petType || '-'}</td>
-          <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
-          <td>
+          <td style="width:160px;font-size:12px;color:var(--text-sub);">${date}</td>
+          <td style="width:100px;font-weight:600;">${v.name || '-'}</td>
+          <td style="width:140px;font-family:var(--font-mono);">${v.phone || '-'}</td>
+          <td style="width:100px;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
+          <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
+          <td style="width:80px;">
             <button onclick="deleteLead('${key}')"
               style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
               삭제

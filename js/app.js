@@ -22,6 +22,14 @@ const MENU = [
       { id: 'adlog_kakao',    label: '카카오',   dot: '#FAE100' },
     ]
   },
+  {
+    id: 'leads',
+    label: '상담 DB',
+    icon: '📋',
+    items: [
+      { id: 'leads_all', label: '전체 신청자', dot: null },
+    ]
+  },
 ];
 
 const MEDIA = [
@@ -42,8 +50,9 @@ let curMonth   = now.getMonth() + 1;
 let curPageId  = 'adlog_dashboard';
 let isUnlocked = false;
 let sidebarCollapsed = false;
-let openSections = { adlog: true };
+let openSections = { adlog: true, leads: true };
 let dashView = 'monthly'; // 'monthly' | 'annual'
+let leadsCache = null;
 
 /* ══════════════════════════════════════════════
    FIREBASE
@@ -83,6 +92,10 @@ async function fetchAllData() {
       });
     });
   });
+}
+async function fetchLeadsData() {
+  const snap = await db.ref('leads').once('value');
+  leadsCache = snap.val() || {};
 }
 
 /* ══════════════════════════════════════════════
@@ -237,7 +250,78 @@ async function selectMonth(month) {
 function render() {
   if (curPageId === 'adlog_dashboard') renderDashboard();
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
+  else if (curPageId === 'leads_all') renderLeads();
   else renderComingSoon();
+}
+
+/* ══════════════════════════════════════════════
+   상담 DB
+══════════════════════════════════════════════ */
+async function renderLeads() {
+  showLoading();
+  await fetchLeadsData();
+
+  // 오름차순(a→b) 정렬
+  const entries = Object.values(leadsCache)
+    .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+
+  // 이름+연락처 기준 그룹화 — 첫 신청 항목 보존
+  const groupMap = {};
+  entries.forEach(e => {
+    const key = `${e.name}__${e.phone}`;
+    if (!groupMap[key]) groupMap[key] = { entry: e, count: 0 };
+    groupMap[key].count++;
+  });
+
+  // 첫 신청일 기준 오름차순 정렬
+  const rows = Object.values(groupMap)
+    .sort((a, b) => new Date(a.entry.submittedAt) - new Date(b.entry.submittedAt));
+
+  const total      = rows.length;
+  const duplicates = rows.filter(g => g.count > 1).length;
+
+  const tbody = rows.map((g, i) => {
+    const e    = g.entry;
+    const d    = new Date(e.submittedAt);
+    const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    const badge = g.count > 1
+      ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${g.count}회</span>`
+      : '';
+    const inquiry = (e.inquiry || '').replace(/"/g, '&quot;');
+    return `
+      <tr>
+        <td style="text-align:center;font-size:12px;color:var(--text-mute);">${i + 1}</td>
+        <td>${e.name}${badge}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;">${e.phone || '-'}</td>
+        <td>${e.petType || '-'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${inquiry}">${e.inquiry || '-'}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;">${dateStr}</td>
+      </tr>`;
+  }).join('');
+
+  const emptyRow = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-mute);">신청자가 없습니다</td></tr>';
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        전체 신청자
+        <span class="section-badge">${total}명</span>
+        ${duplicates > 0 ? `<span class="section-badge" style="background:var(--red-dim);color:var(--red);">중복 ${duplicates}명</span>` : ''}
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:50px;">#</th>
+          <th>이름</th>
+          <th>연락처</th>
+          <th>반려동물</th>
+          <th>문의내용</th>
+          <th>신청일</th>
+        </tr></thead>
+        <tbody>${tbody || emptyRow}</tbody>
+      </table>
+    </div>`;
 }
 
 function renderComingSoon() {

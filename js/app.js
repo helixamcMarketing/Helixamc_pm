@@ -296,12 +296,12 @@ async function renderLeads() {
         : '-';
 return `
         <tr>
-          <td style="width:160px;font-size:12px;color:var(--text-sub);">${date}</td>
-          <td style="width:100px;font-weight:600;">${v.name || '-'}</td>
-          <td style="width:140px;font-family:var(--font-mono);">${v.phone || '-'}</td>
-          <td style="width:100px;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
-          <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
-          <td style="width:80px;">
+          <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
+          <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}</td>
+          <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
+          <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
+          <td style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
+          <td style="width:80px;text-align:left;">
             <button onclick="deleteLead('${key}')"
               style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
               삭제

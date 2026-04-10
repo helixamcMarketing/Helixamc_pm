@@ -818,7 +818,7 @@ function showLoading() {
 buildSidebar();
 updateBreadcrumb();
 updateMonthLabel();
-showLoading();
+render();
 (async () => {
   await fetchAllData();
   render();

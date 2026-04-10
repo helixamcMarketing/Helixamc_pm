@@ -274,7 +274,8 @@ async function renderLeads() {
     </div>`;
 
   try {
-    const snap = await db.ref('leads').once('value');
+    db.ref('leads').off();
+  db.ref('leads').on('value', (snap) => {
     const val  = snap.val();
 
     if (!val) {
@@ -323,11 +324,11 @@ return `
         <tbody>${rows}</tbody>
       </table>`;
 
-  } catch (e) {
+}, (e) => {
     console.error(e);
     document.getElementById('leadsTableWrap').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--red);font-size:13px;">데이터를 불러오지 못했습니다. Firebase 읽기 규칙을 확인해 주세요.</div>`;
-  }
+  });
 }
 
 async function deleteLead(key) {

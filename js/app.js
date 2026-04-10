@@ -287,29 +287,28 @@ async function renderLeads() {
     // 오름차순(a→b) 정렬
     const entries = Object.entries(val).sort((a, b) => a[0].localeCompare(b[0]));
 
-    // 이름+연락처 기준 그룹화 — 첫 신청 항목 보존
-    const groupMap = {};
-    entries.forEach(([key, v]) => {
+    // 이름+연락처별 총 신청 횟수 집계
+    const countMap = {};
+    entries.forEach(([, v]) => {
       const gKey = `${v.name}__${v.phone}`;
-      if (!groupMap[gKey]) groupMap[gKey] = { key, v, count: 0 };
-      groupMap[gKey].count++;
+      countMap[gKey] = (countMap[gKey] || 0) + 1;
     });
 
-    const grouped = Object.values(groupMap);
-    const duplicates = grouped.filter(g => g.count > 1).length;
+    const duplicateCount = Object.values(countMap).filter(c => c > 1).length;
     document.getElementById('leadsBadge').textContent =
-      duplicates > 0
-        ? `${grouped.length}명 · 중복 ${duplicates}명`
-        : `${grouped.length}명`;
+      duplicateCount > 0
+        ? `${entries.length}건 · 중복 ${duplicateCount}명`
+        : `${entries.length}건`;
 
     const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
 
-    const rows = grouped.map(({ key, v, count }) => {
+    const rows = entries.map(([key, v]) => {
       const date = v.submittedAt
         ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
         : '-';
-      const badge = count > 1
-        ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${count}회</span>`
+      const total = countMap[`${v.name}__${v.phone}`];
+      const badge = total > 1
+        ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
         : '';
       return `
         <tr>

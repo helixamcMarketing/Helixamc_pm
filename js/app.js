@@ -191,6 +191,7 @@ async function changeMonth(delta) {
   if (curMonth > 12) { curMonth = 1; curYear++; }
   if (curMonth < 1)  { curMonth = 12; curYear--; }
   updateMonthLabel();
+  if (curPageId === 'leads_list') return;
   showLoading();
   await fetchMonthData(curYear, curMonth);
   render();

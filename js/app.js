@@ -300,7 +300,7 @@ return `
           <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}</td>
           <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
           <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
-          <td style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
+          <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
           <td style="width:80px;text-align:left;">
             <button onclick="deleteLead('${key}')"
               style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
@@ -334,6 +334,19 @@ async function deleteLead(key) {
   if (!confirm('이 신청 데이터를 삭제하시겠습니까?')) return;
   await db.ref(`leads/${key}`).remove();
   renderLeads();
+}
+
+function showInquiry(text) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:480px;width:90%;position:relative;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-sub);margin-bottom:16px;">문의 내용</div>
+      <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-all;">${text}</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="margin-top:24px;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">닫기</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function renderComingSoon() {

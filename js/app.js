@@ -311,14 +311,14 @@ async function renderLeads() {
     }).join('');
 
     document.getElementById('leadsTableWrap').innerHTML = `
-      <table>
+<table style="table-layout:fixed;width:100%;">
         <thead><tr>
-          <th style="text-align:left;">신청 일시</th>
-          <th style="text-align:left;">이름</th>
-          <th style="text-align:left;">연락처</th>
-          <th style="text-align:left;">반려동물</th>
+          <th style="text-align:left;width:160px;">신청 일시</th>
+          <th style="text-align:left;width:100px;">이름</th>
+          <th style="text-align:left;width:140px;">연락처</th>
+          <th style="text-align:left;width:100px;">반려동물</th>
           <th style="text-align:left;">문의 내용</th>
-          <th style="text-align:left;">삭제</th>
+          <th style="text-align:left;width:80px;">삭제</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>`;

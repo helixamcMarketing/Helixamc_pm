@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1F3A" />
+  <title>HELIX 동물메디컬센터 | 무료 상담 신청</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/ad.css" />
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    /* ──────────────────────────────────────────
+       Firebase 설정값 교체 필요
+       Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정 및 구성
+       ────────────────────────────────────────── */
+    const firebaseConfig = {
+      apiKey:            "YOUR_API_KEY",
+      authDomain:        "YOUR_PROJECT.firebaseapp.com",
+      databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId:         "YOUR_PROJECT",
+      storageBucket:     "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId:             "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // app.js에서 접근할 수 있도록 전역 노출
+    window.__firebaseDB  = db;
+    window.__firebaseRef = ref;
+    window.__firebasePush = push;
+
+    // Firebase 준비 완료 이벤트
+    document.dispatchEvent(new Event('firebase-ready'));
+  </script>
+</head>
+<body>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero__inner">
+        <div class="hero__badge">HELIX Animal Medical Center</div>
+        <h1 class="hero__title">
+          대한민국 동물 의료의<br />새로운 기준
+        </h1>
+        <p class="hero__desc">
+          응급부터 종양까지, 전문 수의사가 함께합니다.<br class="br-md" />
+          지금 바로 무료 상담을 신청하세요.
+        </p>
+        <a href="#form" class="hero__cta">무료 상담 신청하기 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="container">
+      <div class="features__grid">
+        <div class="feature-item observe">
+          <div class="feature-item__icon">🏥</div>
+          <h3>24시간 응급 진료</h3>
+          <p>언제든 찾아오세요.<br />응급 상황에 항상 대비합니다.</p>
+        </div>
+        <div class="feature-item observe">
+          <div class="feature-item__icon">🔬</div>
+          <h3>과목별 전문 진료</h3>
+          <p>내과, 외과, 영상의학과 등<br />전문 수의사 팀이 진료합니다.</p>
+        </div>
+        <div class="feature-item observe">
+          <div class="feature-item__icon">💊</div>
+          <h3>종양·특화 진료</h3>
+          <p>반려동물을 위한<br />체계적인 치료 계획을 제공합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Form Section -->
+  <section class="form-section" id="form">
+    <div class="container">
+      <div class="form-wrap observe">
+        <div class="form-section__heading">
+          <h2>무료 상담 신청</h2>
+          <p>아래 정보를 입력해 주시면 빠르게 연락드리겠습니다.</p>
+        </div>
+
+        <form class="lead-form" id="leadForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">신청자 이름 <span class="required">*</span></label>
+              <input type="text" id="name" name="name"
+                     placeholder="홍길동" autocomplete="name"
+                     inputmode="text" />
+              <span class="form-error" id="nameError"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">연락처 <span class="required">*</span></label>
+              <input type="tel" id="phone" name="phone"
+                     placeholder="010-0000-0000" autocomplete="tel"
+                     maxlength="13" inputmode="tel" />
+              <span class="form-error" id="phoneError"></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="petType">반려동물 종류</label>
+            <select id="petType" name="petType">
+              <option value="">선택해 주세요</option>
+              <option value="dog">강아지</option>
+              <option value="cat">고양이</option>
+              <option value="other">기타</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="inquiry">문의 내용</label>
+            <textarea id="inquiry" name="inquiry"
+                      placeholder="궁금한 점을 자유롭게 적어주세요."
+                      rows="4"></textarea>
+          </div>
+
+          <div class="form-group form-group--consent">
+            <label class="checkbox-label">
+              <input type="checkbox" id="consent" name="consent" />
+              <span>개인정보 수집·이용에 동의합니다. <span class="required">*</span></span>
+            </label>
+            <span class="form-error" id="consentError"></span>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span class="submit-btn__text">상담 신청하기</span>
+            <span class="submit-btn__loader" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage" aria-live="polite">
+          <div class="success-message__icon">✓</div>
+          <h3>신청이 완료되었습니다</h3>
+          <p>빠른 시일 내에 연락드리겠습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>© 2025 HELIX Animal Medical Center. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/ad.js"></script>
+</body>
+</html>

@@ -22,6 +22,14 @@ const MENU = [
       { id: 'adlog_kakao',    label: '카카오',   dot: '#FAE100' },
     ]
   },
+  {
+    id: 'leads',
+    label: '상담 DB',
+    icon: '📋',
+    items: [
+      { id: 'leads_list', label: '신청 목록', dot: null },
+    ]
+  },
 ];
 
 const MEDIA = [
@@ -42,7 +50,7 @@ let curMonth   = now.getMonth() + 1;
 let curPageId  = 'adlog_dashboard';
 let isUnlocked = false;
 let sidebarCollapsed = false;
-let openSections = { adlog: true };
+let openSections = { adlog: true, leads: true };
 let dashView = 'monthly'; // 'monthly' | 'annual'
 
 /* ══════════════════════════════════════════════
@@ -237,10 +245,98 @@ async function selectMonth(month) {
 function render() {
   if (curPageId === 'adlog_dashboard') renderDashboard();
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
+  else if (curPageId === 'leads_list') renderLeads();
   else renderComingSoon();
 }
 
-function renderComingSoon() {
+/* ══════════════════════════════════════════════
+   LEADS DB
+══════════════════════════════════════════════ */
+async function renderLeads() {
+  // 잠금 상태면 비밀번호 요구
+  if (!isUnlocked) {
+    document.getElementById('content').innerHTML = `
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🔒</div>
+        <div class="coming-soon-title">열람 잠금</div>
+        <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">상담 DB를 열람하려면 잠금을 해제해 주세요.</div>
+        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">신청 목록 <span class="section-badge" id="leadsBadge">불러오는 중…</span></div>
+    </div>
+    <div class="table-wrap" id="leadsTableWrap">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중…</div>
+    </div>`;
+
+  try {
+    const snap = await db.ref('leads').once('value');
+    const val  = snap.val();
+
+    if (!val) {
+      document.getElementById('leadsTableWrap').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">신청 데이터가 없습니다.</div>`;
+      document.getElementById('leadsBadge').textContent = '0건';
+      return;
+    }
+
+    // key 기준 최신순 정렬
+    const entries = Object.entries(val).sort((a, b) => b[0].localeCompare(a[0]));
+    document.getElementById('leadsBadge').textContent = `${entries.length}건`;
+
+    const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
+
+    const rows = entries.map(([key, v]) => {
+      const date = v.submittedAt
+        ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : '-';
+      return `
+        <tr>
+          <td style="font-size:12px;color:var(--text-sub);">${date}</td>
+          <td style="font-weight:600;">${v.name || '-'}</td>
+          <td style="font-family:var(--font-mono);">${v.phone || '-'}</td>
+          <td>${petTypeLabel[v.petType] || v.petType || '-'}</td>
+          <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;">${v.inquiry || '-'}</td>
+          <td>
+            <button onclick="deleteLead('${key}')"
+              style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
+              삭제
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('leadsTableWrap').innerHTML = `
+      <table>
+        <thead><tr>
+          <th style="text-align:left;">신청 일시</th>
+          <th style="text-align:left;">이름</th>
+          <th style="text-align:left;">연락처</th>
+          <th style="text-align:left;">반려동물</th>
+          <th style="text-align:left;">문의 내용</th>
+          <th style="text-align:left;">삭제</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById('leadsTableWrap').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--red);font-size:13px;">데이터를 불러오지 못했습니다. Firebase 읽기 규칙을 확인해 주세요.</div>`;
+  }
+}
+
+async function deleteLead(key) {
+  if (!confirm('이 신청 데이터를 삭제하시겠습니까?')) return;
+  await db.ref(`leads/${key}`).remove();
+  renderLeads();
+}
+
+
   const section = MENU.find(s => s.items.some(i => i.id === curPageId));
   const item    = section?.items.find(i => i.id === curPageId);
   document.getElementById('content').innerHTML = `

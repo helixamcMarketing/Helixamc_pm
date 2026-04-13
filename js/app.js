@@ -320,13 +320,21 @@ async function renderLeads() {
       const badge = total > 1
         ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
         : '';
+      const reserved = !!v.reserved;
+      const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
+      const btnStyle = reserved
+        ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
+        : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
       return `
-        <tr>
+        <tr style="${rowStyle}">
           <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
           <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
           <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
           <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
           <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
+          <td style="width:90px;text-align:left;">
+            <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">예약완료</button>
+          </td>
           <td style="width:80px;text-align:left;">
             <button onclick="deleteLead('${key}')"
               style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
@@ -344,6 +352,7 @@ async function renderLeads() {
           <th style="text-align:left;width:140px;">연락처</th>
           <th style="text-align:left;width:100px;">반려동물</th>
           <th style="text-align:left;">문의 내용</th>
+          <th style="text-align:left;width:90px;">예약</th>
           <th style="text-align:left;width:80px;">삭제</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -354,6 +363,10 @@ async function renderLeads() {
     document.getElementById('leadsTableWrap').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--red);font-size:13px;">데이터를 불러오지 못했습니다. Firebase 읽기 규칙을 확인해 주세요.</div>`;
   });
+}
+
+function toggleReserved(key, value) {
+  db.ref(`leads/${key}/reserved`).set(value);
 }
 
 async function deleteLead(key) {

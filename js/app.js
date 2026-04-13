@@ -180,7 +180,7 @@ function updateMonthLabel() {
   document.getElementById('prevBtn').style.opacity = isMin ? '0.3' : '1';
   document.getElementById('prevBtn').style.pointerEvents = isMin ? 'none' : 'auto';
 }
-async function changeMonth(delta) {
+function changeMonth(delta) {
   if (dashView === 'annual') {
     curYear += delta;
     updateMonthLabel();
@@ -191,9 +191,6 @@ async function changeMonth(delta) {
   if (curMonth > 12) { curMonth = 1; curYear++; }
   if (curMonth < 1)  { curMonth = 12; curYear--; }
   updateMonthLabel();
-  if (curPageId === 'leads_list') return;
-  showLoading();
-  await fetchMonthData(curYear, curMonth);
   render();
 }
 
@@ -232,13 +229,10 @@ function renderPickerMonths() {
     return `<button class="picker-month-btn ${isActive?'active':''} ${isFuture||isPast?'future':''}" onclick="selectMonth(${mo})">${m}</button>`;
   }).join('');
 }
-async function selectMonth(month) {
+function selectMonth(month) {
   closePicker();
   curYear = pickerYear; curMonth = month;
   updateMonthLabel();
-  if (curPageId === 'leads_list') return;
-  showLoading();
-  await fetchMonthData(curYear, curMonth);
   render();
 }
 
@@ -287,8 +281,21 @@ async function renderLeads() {
       return;
     }
 
-    // 오름차순(a→b) 정렬
-    const entries = Object.entries(val).sort((a, b) => a[0].localeCompare(b[0]));
+    // 해당 월 필터링 + 오름차순 정렬
+    const entries = Object.entries(val)
+      .filter(([, v]) => {
+        if (!v.submittedAt) return false;
+        const d = new Date(v.submittedAt);
+        return d.getFullYear() === curYear && d.getMonth() + 1 === curMonth;
+      })
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (entries.length === 0) {
+      document.getElementById('leadsTableWrap').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">이 달의 신청 데이터가 없습니다.</div>`;
+      document.getElementById('leadsBadge').textContent = '0건';
+      return;
+    }
 
     // 이름+연락처별 총 신청 횟수 집계
     const countMap = {};

@@ -333,7 +333,7 @@ async function renderLeads() {
           <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
           <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
           <td style="width:90px;text-align:left;">
-            <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">예약완료</button>
+            <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
           </td>
           <td style="width:80px;text-align:left;">
             <button onclick="deleteLead('${key}')"

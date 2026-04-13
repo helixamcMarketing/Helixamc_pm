@@ -7,144 +7,176 @@
   <title>HELIX 동물메디컬센터 | 무료 상담 신청</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/ad.css" />
-
-  <!-- Meta Pixel Code -->
-  <script>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', '934156036153660');
-  fbq('track', 'PageView');
-  </script>
-  <noscript><img height="1" width="1" style="display:none"
-  src="https://www.facebook.com/tr?id=934156036153660&ev=PageView&noscript=1"
-  /></noscript>
-  <!-- End Meta Pixel Code -->
-
-  <!-- TikTok Pixel Code Start -->
-  <script>
-  !function (w, d, t) {
-    w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
-  var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
-  ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
-    ttq.load('D7E7TPJC77U97DR2MU3G');
-    ttq.page();
-  }(window, document, 'ttq');
-  </script>
-  <!-- TikTok Pixel Code End -->
-
-  <!-- Danggeun Market Code -->
-  <script src="https://karrot-pixel.business.daangn.com/karrot-pixel.js"></script>
-  <script>
-    window.karrotPixel.init('1776058563951938001');
-    window.karrotPixel.track('ViewPage');
-  </script>
-  <!-- End Danggeun Market Code -->
-
-  <!-- Kakao Pixel Code -->
-  <script type="text/javascript" charset="UTF-8" src="//t1.daumcdn.net/kas/static/kp.js"></script>
-  <script type="text/javascript">
-    kakaoPixel('368097386331325962').pageView();
-  </script>
-  <!-- End Kakao Pixel Code -->
-
-  <!-- Google Analytics GA4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0F55R2PE1Q"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-0F55R2PE1Q');
-  </script>
-  <!-- End Google Analytics GA4 -->
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-    /* ──────────────────────────────────────────
-       Firebase 설정값 교체 필요
-       Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정 및 구성
-       ────────────────────────────────────────── */
     const firebaseConfig = {
-  apiKey: "AIzaSyCmJpvfoMvquoBdDJAK4ZJ657C2UOTZ5eU",
-  authDomain: "helixamc-pm.firebaseapp.com",
-  databaseURL: "https://helixamc-pm-default-rtdb.firebaseio.com",
-  projectId: "helixamc-pm",
-  storageBucket: "helixamc-pm.firebasestorage.app",
-  messagingSenderId: "382526528183",
-  appId: "1:382526528183:web:c487b9de1471829afe0b32",
-  measurementId: "G-0F55R2PE1Q"
-};
-
+      apiKey: "AIzaSyCmJpvfoMvquoBdDJAK4ZJ657C2UOTZ5eU",
+      authDomain: "helixamc-pm.firebaseapp.com",
+      databaseURL: "https://helixamc-pm-default-rtdb.firebaseio.com",
+      projectId: "helixamc-pm",
+      storageBucket: "helixamc-pm.firebasestorage.app",
+      messagingSenderId: "382526528183",
+      appId: "1:382526528183:web:c487b9de1471829afe0b32",
+    };
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
-
-    // app.js에서 접근할 수 있도록 전역 노출
-    window.__firebaseDB  = db;
-    window.__firebaseRef = ref;
+    window.__firebaseDB   = db;
+    window.__firebaseRef  = ref;
     window.__firebasePush = push;
-
-    // Firebase 준비 완료 이벤트
     document.dispatchEvent(new Event('firebase-ready'));
   </script>
+
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init','934156036153660');fbq('track','PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=934156036153660&ev=PageView&noscript=1"/></noscript>
+  <!-- End Meta Pixel Code -->
+
+  <!-- TikTok Pixel Code Start -->
+  <script>
+  !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+  ttq.load('D7E7TPJC77U97DR2MU3G');ttq.page();
+  }(window,document,'ttq');
+  </script>
+  <!-- TikTok Pixel Code End -->
+
+  <!-- Danggeun Market Code -->
+  <script src="https://karrot-pixel.business.daangn.com/karrot-pixel.js"></script>
+  <script>window.karrotPixel.init('1776058563951938001');window.karrotPixel.track('ViewPage');</script>
+  <!-- End Danggeun Market Code -->
+
+  <!-- Kakao Pixel Code -->
+  <script type="text/javascript" charset="UTF-8" src="//t1.daumcdn.net/kas/static/kp.js"></script>
+  <script type="text/javascript">kakaoPixel('368097386331325962').pageView();</script>
+  <!-- End Kakao Pixel Code -->
+
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0F55R2PE1Q"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-0F55R2PE1Q');</script>
+  <!-- End Google Analytics GA4 -->
 </head>
 <body>
 
-  <!-- Hero Section -->
+  <!-- ① 메인 배너 -->
   <section class="hero">
-    <div class="container">
-      <div class="hero__inner">
-        <div class="hero__badge">HELIX Animal Medical Center</div>
-        <h1 class="hero__title">
-          대한민국 동물 의료의<br />새로운 기준
-        </h1>
-        <p class="hero__desc">
-          응급부터 종양까지, 전문 수의사가 함께합니다.<br class="br-md" />
-          지금 바로 무료 상담을 신청하세요.
-        </p>
-        <a href="#form" class="hero__cta">무료 상담 신청하기 →</a>
-      </div>
+    <div class="hero__bg">
+      <!-- 이미지 준비 시: <img src="images/hero.jpg" alt="헬릭스 동물메디컬센터"> -->
+      <div class="hero__placeholder"></div>
+      <div class="hero__overlay"></div>
+    </div>
+    <div class="container hero__content">
+      <div class="hero__tag">HELIX Animal Medical Center</div>
+      <h1 class="hero__title">
+        대한민국 동물 의료의<br />새로운 기준
+      </h1>
+      <p class="hero__desc">
+        응급부터 종양까지, 전문 수의사가 함께합니다.
+      </p>
+      <a href="#form" class="hero__cta">무료 상담 신청하기 →</a>
+    </div>
+    <div class="hero__scroll">
+      <span></span>
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section class="features">
+  <!-- ② 병원 강점 / 차별점 -->
+  <section class="strengths">
     <div class="container">
-      <div class="features__grid">
-        <div class="feature-item observe">
-          <div class="feature-item__icon">🏥</div>
+      <div class="section-label observe">WHY HELIX</div>
+      <h2 class="section-title observe">헬릭스가 다른 이유</h2>
+      <div class="strengths__grid">
+        <div class="strength-card observe">
+          <div class="strength-card__num">01</div>
+          <div class="strength-card__icon">🏥</div>
           <h3>24시간 응급 진료</h3>
-          <p>언제든 찾아오세요.<br />응급 상황에 항상 대비합니다.</p>
+          <p>야간·휴일 구분 없이 응급 상황에 즉각 대응합니다. 골든 타임을 지키는 것이 저희의 사명입니다.</p>
         </div>
-        <div class="feature-item observe">
-          <div class="feature-item__icon">🔬</div>
-          <h3>과목별 전문 진료</h3>
-          <p>내과, 외과, 영상의학과 등<br />전문 수의사 팀이 진료합니다.</p>
+        <div class="strength-card observe">
+          <div class="strength-card__num">02</div>
+          <div class="strength-card__icon">👨‍⚕️</div>
+          <h3>전문 수의사 팀</h3>
+          <p>각 분야 전문 수의사가 팀으로 진료합니다. 복잡한 케이스도 협진을 통해 최선의 치료를 제공합니다.</p>
         </div>
-        <div class="feature-item observe">
-          <div class="feature-item__icon">💊</div>
-          <h3>종양·특화 진료</h3>
-          <p>반려동물을 위한<br />체계적인 치료 계획을 제공합니다.</p>
+        <div class="strength-card observe">
+          <div class="strength-card__num">03</div>
+          <div class="strength-card__icon">🔬</div>
+          <h3>첨단 의료 장비</h3>
+          <p>CT, MRI, 디지털 X-ray 등 최신 장비를 갖추고 있어 정확한 진단이 가능합니다.</p>
+        </div>
+        <div class="strength-card observe">
+          <div class="strength-card__num">04</div>
+          <div class="strength-card__icon">🐾</div>
+          <h3>종합 케어 시스템</h3>
+          <p>진단부터 치료, 재활까지 한 곳에서 완결됩니다. 반려동물의 전 생애를 책임집니다.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Form Section -->
+  <!-- ③ 진료 영역 -->
+  <section class="departments">
+    <div class="container">
+      <div class="section-label observe">DEPARTMENTS</div>
+      <h2 class="section-title observe">진료 영역</h2>
+      <div class="dept__grid">
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🫁</div>
+          <h3>내과</h3>
+          <p>소화기, 호흡기, 심장, 신장 등 내부 장기 전반의 질환을 진료합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🦴</div>
+          <h3>외과</h3>
+          <p>정형외과, 연부조직 수술 등 다양한 외과적 처치를 수행합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">📡</div>
+          <h3>영상의학과</h3>
+          <p>X-ray, 초음파, CT, MRI를 통한 전반 영상 진단을 제공합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">👁️</div>
+          <h3>안과</h3>
+          <p>백내장, 녹내장, 각막 질환 등 안구 관련 전문 진료를 제공합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🦷</div>
+          <h3>치과</h3>
+          <p>스케일링, 발치, 구강 수술 등 구강 건강 전반을 관리합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🧬</div>
+          <h3>종양과</h3>
+          <p>종양 진단부터 항암, 수술 치료까지 체계적인 암치료 프로그램을 운영합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🐾</div>
+          <h3>피부과</h3>
+          <p>알레르기, 아토피, 피부 감염 등 피부 및 귀 질환을 전문적으로 치료합니다.</p>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🚨</div>
+          <h3>응급 집중치료</h3>
+          <p>24시간 응급 처치 및 수술후 집중 모니터링 시스템을 운영합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 신청 폼 -->
   <section class="form-section" id="form">
     <div class="container">
-      <div class="form-wrap observe">
+      <div class="form-section__inner observe">
         <div class="form-section__heading">
-          <h2>무료 상담 신청</h2>
+          <div class="section-label">CONSULTATION</div>
+          <h2 class="section-title">무료 상담 신청</h2>
           <p>아래 정보를 입력해 주시면 빠르게 연락드리겠습니다.</p>
         </div>
 
@@ -152,17 +184,12 @@
           <div class="form-row">
             <div class="form-group">
               <label for="name">신청자 이름 <span class="required">*</span></label>
-              <input type="text" id="name" name="name"
-                     placeholder="홍길동" autocomplete="name"
-                     inputmode="text" />
+              <input type="text" id="name" name="name" placeholder="홍길동" autocomplete="name" inputmode="text" />
               <span class="form-error" id="nameError"></span>
             </div>
-
             <div class="form-group">
               <label for="phone">연락처 <span class="required">*</span></label>
-              <input type="tel" id="phone" name="phone"
-                     placeholder="010-0000-0000" autocomplete="tel"
-                     maxlength="13" inputmode="tel" />
+              <input type="tel" id="phone" name="phone" placeholder="010-0000-0000" autocomplete="tel" maxlength="13" inputmode="tel" />
               <span class="form-error" id="phoneError"></span>
             </div>
           </div>
@@ -179,9 +206,7 @@
 
           <div class="form-group">
             <label for="inquiry">문의 내용</label>
-            <textarea id="inquiry" name="inquiry"
-                      placeholder="궁금한 점을 자유롭게 적어주세요."
-                      rows="4"></textarea>
+            <textarea id="inquiry" name="inquiry" placeholder="궁금한 점을 자유롭게 적어주세요." rows="4"></textarea>
           </div>
 
           <div class="form-group form-group--consent">
@@ -198,7 +223,6 @@
           </button>
         </form>
 
-        <!-- Success Message -->
         <div class="success-message" id="successMessage" aria-live="polite">
           <div class="success-message__icon">✓</div>
           <h3>신청이 완료되었습니다</h3>

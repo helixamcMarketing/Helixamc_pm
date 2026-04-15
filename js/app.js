@@ -529,16 +529,16 @@ async function handleSalesUpload(file) {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-      // row[0]: 요약행, row[1]: 헤더, row[2]+: 일별 데이터
+      // row[0]: 헤더, row[1]: 요약행, row[2]: 일별 헤더, row[3]+: 일별 데이터
       const summary = {
-        dailyAvg:   rows[0][0] || 0,
-        totalCount: rows[0][1] || 0,
-        totalAmount:rows[0][2] || 0,
-        avgAmount:  rows[0][3] || 0,
+        dailyAvg:    rows[1][0] || 0,
+        totalCount:  rows[1][1] || 0,
+        totalAmount: rows[1][2] || 0,
+        avgAmount:   rows[1][3] || 0,
       };
 
       const daily = {};
-      for (let i = 2; i < rows.length; i++) {
+      for (let i = 3; i < rows.length; i++) {
         const r = rows[i];
         if (!r[0] || typeof r[0] !== 'string') continue;
         daily[r[0].replace(/\./g, '-')] = {

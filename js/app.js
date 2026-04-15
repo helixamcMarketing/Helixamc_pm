@@ -2,6 +2,7 @@
    ⚙️  설정
 ══════════════════════════════════════════════ */
 const EDIT_PASSWORD = '9119';
+const SALES_PASSWORD = '1506';
 const MIN_YEAR  = 2026;
 const MIN_MONTH = 3;
 
@@ -58,6 +59,7 @@ let curYear    = now.getFullYear();
 let curMonth   = now.getMonth() + 1;
 let curPageId  = 'adlog_dashboard';
 let isUnlocked = false;
+let isSalesUnlocked = false;
 let sidebarCollapsed = false;
 let openSections = { adlog: true, leads: true, sales: true };
 let dashView = 'monthly'; // 'monthly' | 'annual'
@@ -183,7 +185,9 @@ function updateMonthLabel() {
     label.textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
   }
   const isCur = curYear === now.getFullYear() && curMonth === now.getMonth() + 1;
-  const isMin = curYear === MIN_YEAR && curMonth === MIN_MONTH;
+  const isMin = curPageId.startsWith('sales_')
+    ? (curYear === 2025 && curMonth === 1)
+    : (curYear === MIN_YEAR && curMonth === MIN_MONTH);
   document.getElementById('nextBtn').style.opacity = isCur ? '0.3' : '1';
   document.getElementById('nextBtn').style.pointerEvents = isCur ? 'none' : 'auto';
   document.getElementById('prevBtn').style.opacity = isMin ? '0.3' : '1';
@@ -573,13 +577,13 @@ async function handleSalesUpload(file) {
 
 // 매출 대시보드
 async function renderSalesDashboard() {
-  if (!isUnlocked) {
+  if (!isUnlocked || !isSalesUnlocked) {
     document.getElementById('content').innerHTML = `
       <div class="coming-soon">
         <div class="coming-soon-icon">🔒</div>
         <div class="coming-soon-title">열람 잠금</div>
         <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">매출 정산을 열람하려면 잠금을 해제해 주세요.</div>
-        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+        <button onclick="openSalesModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
       </div>`;
     return;
   }
@@ -695,13 +699,13 @@ async function renderSalesDashboard() {
 
 // 월별 상세
 async function renderSalesMonthly() {
-  if (!isUnlocked) {
+  if (!isUnlocked || !isSalesUnlocked) {
     document.getElementById('content').innerHTML = `
       <div class="coming-soon">
         <div class="coming-soon-icon">🔒</div>
         <div class="coming-soon-title">열람 잠금</div>
         <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">매출 정산을 열람하려면 잠금을 해제해 주세요.</div>
-        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+        <button onclick="openSalesModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
       </div>`;
     return;
   }
@@ -1216,8 +1220,31 @@ function updateLockUI() {
   if (curPageId.startsWith('sales_')) render();
 }
 function onLockBtnClick() {
-  if (isUnlocked) { isUnlocked = false; updateLockUI(); }
+  if (isUnlocked) { isUnlocked = false; isSalesUnlocked = false; updateLockUI(); }
   else openModal();
+}
+function openSalesModal() {
+  document.getElementById('salesModalOverlay').classList.add('open');
+  const input = document.getElementById('salesPwInput');
+  input.value = ''; input.classList.remove('error');
+  document.getElementById('salesPwError').textContent = '';
+  setTimeout(() => input.focus(), 100);
+}
+function closeSalesModal() { document.getElementById('salesModalOverlay').classList.remove('open'); }
+function submitSalesPassword() {
+  const input = document.getElementById('salesPwInput');
+  if (input.value === SALES_PASSWORD) {
+    isSalesUnlocked = true;
+    isUnlocked = true;
+    closeSalesModal();
+    updateLockUI();
+    render();
+  } else {
+    input.classList.add('error');
+    document.getElementById('salesPwError').textContent = '비밀번호가 올바르지 않습니다';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
 }
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');

@@ -70,6 +70,20 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="salesModalOverlay" onclick="if(event.target===this)closeSalesModal()">
+      <div class="modal">
+        <div class="modal-title">💰 매출 정산 잠금 해제</div>
+        <div class="modal-sub">매출 정산을 열람하려면 2차 비밀번호를 입력하세요</div>
+        <input class="modal-input" id="salesPwInput" type="password" maxlength="20" placeholder="••••"
+          onkeydown="if(event.key==='Enter') submitSalesPassword()" oninput="this.classList.remove('error');document.getElementById('salesPwError').textContent=''">
+        <div class="modal-error" id="salesPwError"></div>
+        <div class="modal-btns">
+          <button class="modal-btn cancel" onclick="closeSalesModal()">취소</button>
+          <button class="modal-btn confirm" onclick="submitSalesPassword()">확인</button>
+        </div>
+      </div>
+    </div>
+
     <!-- CONTENT -->
     <main class="content" id="content"></main>
 

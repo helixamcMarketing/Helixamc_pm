@@ -282,6 +282,7 @@ async function renderLeads() {
       <input type="text" id="leadsSearchInput" placeholder="검색어 입력" style="padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;width:140px;" />
       <button onclick="applyLeadsSearch()" style="padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">검색</button>
       <button onclick="resetLeadsSearch()" style="padding:6px 16px;background:transparent;color:var(--text-sub);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;">초기화</button>
+      <button onclick="downloadLeadsCsv()" style="margin-left:auto;padding:6px 16px;background:var(--green,#34C759);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">엑셀 다운로드</button>
     </div>
     <div class="table-wrap" id="leadsTableWrap">
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중…</div>
@@ -321,6 +322,7 @@ async function renderLeads() {
 }
 
 function renderLeadsTable(entries) {
+  window._leadsDisplayedEntries = entries;
   if (entries.length === 0) {
     document.getElementById('leadsTableWrap').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">이 달의 신청 데이터가 없습니다.</div>`;
@@ -436,6 +438,36 @@ function resetLeadsSearch() {
   document.getElementById('leadsSearchInput').value = '';
   setLeadsSearchType('name');
   renderLeadsTable(window._leadsAllEntries);
+}
+
+function downloadLeadsCsv() {
+  const entries = window._leadsDisplayedEntries || [];
+  if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
+  const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
+  const header = '신청일시,이름,연락처,반려동물,문의내용,예약상태';
+  const rows = entries.map(([, v]) => {
+    const date = v.submittedAt
+      ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '';
+    const esc = (s) => '"' + String(s || '').replace(/"/g, '""') + '"';
+    return [
+      esc(date),
+      esc(v.name),
+      esc(v.phone),
+      esc(petTypeLabel[v.petType] || v.petType || ''),
+      esc(v.inquiry),
+      esc(v.reserved ? '예약완료' : '미예약')
+    ].join(',');
+  });
+  const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `상담DB_${today}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function toggleReserved(key, value) {

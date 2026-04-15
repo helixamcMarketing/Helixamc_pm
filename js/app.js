@@ -30,6 +30,15 @@ const MENU = [
       { id: 'leads_list', label: '신청 목록', dot: null },
     ]
   },
+  {
+    id: 'sales',
+    label: '매출 정산',
+    icon: '💰',
+    items: [
+      { id: 'sales_dashboard', label: '대시보드', dot: null },
+      { id: 'sales_monthly',   label: '월별 상세', dot: null },
+    ]
+  },
 ];
 
 const MEDIA = [
@@ -50,7 +59,7 @@ let curMonth   = now.getMonth() + 1;
 let curPageId  = 'adlog_dashboard';
 let isUnlocked = false;
 let sidebarCollapsed = false;
-let openSections = { adlog: true, leads: true };
+let openSections = { adlog: true, leads: true, sales: true };
 let dashView = 'monthly'; // 'monthly' | 'annual'
 
 /* ══════════════════════════════════════════════
@@ -243,6 +252,8 @@ function render() {
   if (curPageId === 'adlog_dashboard') renderDashboard();
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
   else if (curPageId === 'leads_list') renderLeads();
+  else if (curPageId === 'sales_dashboard') renderSalesDashboard();
+  else if (curPageId === 'sales_monthly') renderSalesMonthly();
   else renderComingSoon();
 }
 
@@ -491,6 +502,273 @@ function showInquiry(text) {
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+/* ══════════════════════════════════════════════
+   SALES — 매출 정산
+══════════════════════════════════════════════ */
+
+// 엑셀 파일 파싱 및 Firebase 저장
+async function handleSalesUpload(file) {
+  if (!isUnlocked) { openModal(); return; }
+  const btn = document.getElementById('salesUploadBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '업로드 중...'; }
+
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+    let uploadedMonths = [];
+
+    for (const sheetName of wb.SheetNames) {
+      if (sheetName === 'DASHBOARD') continue;
+      const match = sheetName.match(/^(\d{2})\.(\d{2})$/);
+      if (!match) continue;
+
+      const year = '20' + match[1];
+      const month = match[2];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      // row[0]: 요약행, row[1]: 헤더, row[2]+: 일별 데이터
+      const summary = {
+        dailyAvg:   rows[0][0] || 0,
+        totalCount: rows[0][1] || 0,
+        totalAmount:rows[0][2] || 0,
+        avgAmount:  rows[0][3] || 0,
+      };
+
+      const daily = {};
+      for (let i = 2; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] || typeof r[0] !== 'string') continue;
+        daily[r[0].replace(/\./g, '-')] = {
+          count:       r[1]  || 0,
+          amount:      r[2]  || 0,
+          avg:         r[3]  || 0,
+          cashCount:   r[4]  || 0,
+          cashAmount:  r[5]  || 0,
+          cardCount:   r[7]  || 0,
+          cardAmount:  r[8]  || 0,
+          transferCount:  r[11] || 0,
+          transferAmount: r[12] || 0,
+          taxAmount:   r[18] || 0,
+          taxFreeAmount: r[19] || 0,
+        };
+      }
+
+      await db.ref(`sales/${year}/${month}`).set({ summary, daily });
+      uploadedMonths.push(`${year}.${month}`);
+    }
+
+    alert(`업로드 완료: ${uploadedMonths.join(', ')}`);
+    if (curPageId === 'sales_dashboard') renderSalesDashboard();
+    if (curPageId === 'sales_monthly') renderSalesMonthly();
+  } catch(e) {
+    console.error(e);
+    alert('파일 파싱 오류: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '엑셀 업로드'; }
+  }
+}
+
+// 매출 대시보드
+async function renderSalesDashboard() {
+  if (!isUnlocked) {
+    document.getElementById('content').innerHTML = `
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🔒</div>
+        <div class="coming-soon-title">열람 잠금</div>
+        <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">매출 정산을 열람하려면 잠금을 해제해 주세요.</div>
+        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('content').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중...</div>`;
+
+  const snap = await db.ref('sales').once('value');
+  const salesData = snap.val() || {};
+
+  // 월별 요약 집계
+  const monthly = [];
+  for (const year of Object.keys(salesData).sort()) {
+    for (const month of Object.keys(salesData[year]).sort()) {
+      const s = salesData[year][month].summary || {};
+      monthly.push({
+        label: `${year}.${month}`,
+        year, month,
+        totalAmount: s.totalAmount || 0,
+        totalCount:  s.totalCount  || 0,
+        avgAmount:   s.avgAmount   || 0,
+        dailyAvg:    s.dailyAvg    || 0,
+      });
+    }
+  }
+
+  const latest = monthly[monthly.length - 1];
+
+  const kpiHtml = latest ? `
+    <div class="dash-grid">
+      <div class="kpi-card"><div class="kpi-label">최근월 수납 총액</div><div class="kpi-value">${fmtMoney(latest.totalAmount)}</div><div class="kpi-sub">₩ · ${latest.label}</div></div>
+      <div class="kpi-card"><div class="kpi-label">최근월 수납 건수</div><div class="kpi-value">${fmtMoney(latest.totalCount)}</div><div class="kpi-sub">건 · ${latest.label}</div></div>
+      <div class="kpi-card"><div class="kpi-label">최근월 수납 평균</div><div class="kpi-value" style="color:var(--accent)">${fmtMoney(Math.round(latest.avgAmount))}</div><div class="kpi-sub">₩ / 건</div></div>
+      <div class="kpi-card"><div class="kpi-label">최근월 일평균 수납</div><div class="kpi-value">${fmtMoney(Math.round(latest.dailyAvg))}</div><div class="kpi-sub">₩ / 일</div></div>
+    </div>` : '';
+
+  const tableRows = monthly.map(m => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:13px;font-weight:600;text-align:left;padding:12px 20px;">${m.label}</td>
+      <td>${fmtMoney(m.totalAmount)}</td>
+      <td>${fmtMoney(m.totalCount)}</td>
+      <td>${fmtMoney(Math.round(m.avgAmount))}</td>
+      <td>${fmtMoney(Math.round(m.dailyAvg))}</td>
+    </tr>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">매출 대시보드</div>
+      <div>
+        <input type="file" id="salesFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleSalesUpload(this.files[0])">
+        <button id="salesUploadBtn" onclick="document.getElementById('salesFileInput').click()"
+          style="padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+          엑셀 업로드
+        </button>
+      </div>
+    </div>
+    ${kpiHtml}
+    <div class="chart-wrap" style="margin-top:20px;">
+      <div class="chart-title"><div class="chart-title-left">월별 수납 총액 추이</div></div>
+      <div class="chart-canvas-wrap"><canvas id="salesChart"></canvas></div>
+    </div>
+    <div class="section-header" style="margin-top:20px;">
+      <div class="section-title" style="font-size:14px;color:var(--text-sub);">월별 요약</div>
+    </div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead><tr>
+          <th style="text-align:left;">월</th>
+          <th>수납 총액 (₩)</th>
+          <th>수납 건수 (건)</th>
+          <th>수납 평균 (₩)</th>
+          <th>일평균 수납 (₩)</th>
+        </tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-mute);padding:40px;">데이터가 없습니다. 엑셀 파일을 업로드해 주세요.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+
+  // 차트
+  setTimeout(() => {
+    const ctx = document.getElementById('salesChart')?.getContext('2d');
+    if (!ctx || !monthly.length) return;
+    if (window._salesChart) { window._salesChart.destroy(); }
+    window._salesChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: monthly.map(m => m.label),
+        datasets: [{
+          label: '수납 총액',
+          data: monthly.map(m => m.totalAmount),
+          backgroundColor: 'rgba(79,142,247,0.4)',
+          borderColor: '#4F8EF7',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1E2230', borderColor: '#2A2E3E', borderWidth: 1,
+            titleColor: '#7A8099', bodyColor: '#E8EAF0', padding: 12,
+            callbacks: { label: ctx => ` 수납 총액  ₩${Number(ctx.parsed.y).toLocaleString('ko-KR')}` }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#464D66', font: { size: 10 } }, border: { color: '#2A2E3E' } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#464D66', font: { size: 10 }, callback: v => v >= 1000000000 ? (v/1000000000).toFixed(1)+'B' : v >= 1000000 ? (v/1000000).toFixed(0)+'M' : v }, border: { color: '#2A2E3E' } }
+        }
+      }
+    });
+  }, 50);
+}
+
+// 월별 상세
+async function renderSalesMonthly() {
+  if (!isUnlocked) {
+    document.getElementById('content').innerHTML = `
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🔒</div>
+        <div class="coming-soon-title">열람 잠금</div>
+        <div style="margin-bottom:20px;color:var(--text-sub);font-size:13px;">매출 정산을 열람하려면 잠금을 해제해 주세요.</div>
+        <button onclick="openModal()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">잠금 해제</button>
+      </div>`;
+    return;
+  }
+
+  const month = String(curMonth).padStart(2, '0');
+  const snap = await db.ref(`sales/${curYear}/${month}`).once('value');
+  const data = snap.val();
+
+  if (!data) {
+    document.getElementById('content').innerHTML = `
+      <div class="coming-soon">
+        <div class="coming-soon-icon">📂</div>
+        <div class="coming-soon-title">${curYear}.${month}</div>
+        <div style="color:var(--text-sub);font-size:13px;">해당 월의 데이터가 없습니다. 엑셀 파일을 업로드해 주세요.</div>
+      </div>`;
+    return;
+  }
+
+  const s = data.summary || {};
+  const daily = data.daily || {};
+  const sortedDays = Object.keys(daily).sort();
+
+  const rows = sortedDays.map(day => {
+    const d = daily[day];
+    return `
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:12px;text-align:left;padding:10px 20px;">${day.replace(/-/g,'.')}</td>
+        <td>${fmtMoney(d.count)}</td>
+        <td>${fmtMoney(d.amount)}</td>
+        <td>${fmtMoney(Math.round(d.avg))}</td>
+        <td>${fmtMoney(d.cashAmount)}</td>
+        <td>${fmtMoney(d.cardAmount)}</td>
+        <td>${fmtMoney(d.transferAmount)}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">월별 상세 <span class="section-badge">${curYear}.${month}</span></div>
+    </div>
+    <div class="dash-grid" style="margin-bottom:20px;">
+      <div class="kpi-card"><div class="kpi-label">수납 총액</div><div class="kpi-value">${fmtMoney(s.totalAmount)}</div><div class="kpi-sub">₩</div></div>
+      <div class="kpi-card"><div class="kpi-label">수납 건수</div><div class="kpi-value">${fmtMoney(s.totalCount)}</div><div class="kpi-sub">건</div></div>
+      <div class="kpi-card"><div class="kpi-label">수납 평균</div><div class="kpi-value" style="color:var(--accent)">${fmtMoney(Math.round(s.avgAmount))}</div><div class="kpi-sub">₩ / 건</div></div>
+      <div class="kpi-card"><div class="kpi-label">일평균 수납</div><div class="kpi-value">${fmtMoney(Math.round(s.dailyAvg))}</div><div class="kpi-sub">₩ / 일</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="col-date">날짜</th>
+          <th>수납 건수</th>
+          <th>수납 총액 (₩)</th>
+          <th>수납 평균 (₩)</th>
+          <th>현금 (₩)</th>
+          <th>카드 (₩)</th>
+          <th>계좌이체 (₩)</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td>합계</td>
+          <td>${fmtMoney(s.totalCount)}</td>
+          <td>${fmtMoney(s.totalAmount)}</td>
+          <td>${fmtMoney(Math.round(s.avgAmount))}</td>
+          <td>-</td><td>-</td><td>-</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
 }
 
 function renderComingSoon() {
@@ -934,7 +1212,8 @@ function updateLockUI() {
     text.textContent = 'LOCK';
   }
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') render();
-if (curPageId === 'leads_list') renderLeads();
+  if (curPageId === 'leads_list') renderLeads();
+  if (curPageId.startsWith('sales_')) render();
 }
 function onLockBtnClick() {
   if (isUnlocked) { isUnlocked = false; updateLockUI(); }

@@ -262,19 +262,40 @@ async function renderLeads() {
     return;
   }
 
+  const mm = String(curMonth).padStart(2, '0');
+  const defaultStart = `${curYear}-${mm}-01`;
+  const lastDay = new Date(curYear, curMonth, 0).getDate();
+  const defaultEnd = `${curYear}-${mm}-${String(lastDay).padStart(2, '0')}`;
+
   document.getElementById('content').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div class="section-title">신청 목록 <span class="section-badge" id="leadsBadge">불러오는 중…</span></div>
+    </div>
+    <div id="leadsSearchBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+      <input type="date" id="leadsDateFrom" value="${defaultStart}" style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font-mono);" />
+      <span style="color:var(--text-mute);font-size:12px;">~</span>
+      <input type="date" id="leadsDateTo" value="${defaultEnd}" style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font-mono);" />
+      <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-left:4px;">
+        <button id="searchTypeName" onclick="setLeadsSearchType('name')" style="padding:6px 14px;font-size:12px;border:none;cursor:pointer;background:var(--accent);color:#fff;font-weight:600;">이름</button>
+        <button id="searchTypePhone" onclick="setLeadsSearchType('phone')" style="padding:6px 14px;font-size:12px;border:none;cursor:pointer;background:var(--surface);color:var(--text-sub);">연락처</button>
+      </div>
+      <input type="text" id="leadsSearchInput" placeholder="검색어 입력" style="padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;width:140px;" />
+      <button onclick="applyLeadsSearch()" style="padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">검색</button>
+      <button onclick="resetLeadsSearch()" style="padding:6px 16px;background:transparent;color:var(--text-sub);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;">초기화</button>
     </div>
     <div class="table-wrap" id="leadsTableWrap">
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중…</div>
     </div>`;
 
-    db.ref('leads').off();
+  window._leadsSearchType = 'name';
+  window._leadsAllEntries = [];
+
+  db.ref('leads').off();
   db.ref('leads').on('value', (snap) => {
-    const val  = snap.val();
+    const val = snap.val();
 
     if (!val) {
+      window._leadsAllEntries = [];
       document.getElementById('leadsTableWrap').innerHTML = `
         <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">신청 데이터가 없습니다.</div>`;
       document.getElementById('leadsBadge').textContent = '0건';
@@ -282,7 +303,7 @@ async function renderLeads() {
     }
 
     // 해당 월 필터링 + 오름차순 정렬
-    const entries = Object.entries(val)
+    window._leadsAllEntries = Object.entries(val)
       .filter(([, v]) => {
         if (!v.submittedAt) return false;
         const d = new Date(v.submittedAt);
@@ -290,79 +311,131 @@ async function renderLeads() {
       })
       .sort((a, b) => a[0].localeCompare(b[0]));
 
-    if (entries.length === 0) {
-      document.getElementById('leadsTableWrap').innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">이 달의 신청 데이터가 없습니다.</div>`;
-      document.getElementById('leadsBadge').textContent = '0건';
-      return;
-    }
+    renderLeadsTable(window._leadsAllEntries);
 
-    // 이름+연락처별 총 신청 횟수 집계
-    const countMap = {};
-    entries.forEach(([, v]) => {
-      const gKey = `${v.name}__${v.phone}`;
-      countMap[gKey] = (countMap[gKey] || 0) + 1;
-    });
-
-    const duplicateCount = Object.values(countMap).filter(c => c > 1).length;
-    document.getElementById('leadsBadge').textContent =
-      duplicateCount > 0
-        ? `${entries.length}건 · 중복 ${duplicateCount}명`
-        : `${entries.length}건`;
-
-    const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-
-    const rows = entries.map(([key, v]) => {
-      const date = v.submittedAt
-        ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
-        : '-';
-      const total = countMap[`${v.name}__${v.phone}`];
-      const badge = total > 1
-        ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
-        : '';
-      const reserved = !!v.reserved;
-      const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
-      const btnStyle = reserved
-        ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
-        : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
-      return `
-        <tr style="${rowStyle}">
-          <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
-          <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
-          <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
-          <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
-          <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
-          <td style="width:90px;text-align:left;">
-            <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
-          </td>
-          <td style="width:80px;text-align:left;">
-            <button onclick="deleteLead('${key}')"
-              style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
-              삭제
-            </button>
-          </td>
-        </tr>`;
-    }).join('');
-
-    document.getElementById('leadsTableWrap').innerHTML = `
-<table style="table-layout:fixed;width:100%;">
-        <thead><tr>
-          <th style="text-align:left;width:160px;">신청 일시</th>
-          <th style="text-align:left;width:100px;">이름</th>
-          <th style="text-align:left;width:140px;">연락처</th>
-          <th style="text-align:left;width:100px;">반려동물</th>
-          <th style="text-align:left;">문의 내용</th>
-          <th style="text-align:left;width:90px;">예약</th>
-          <th style="text-align:left;width:80px;">삭제</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-
-}, (e) => {
+  }, (e) => {
     console.error(e);
     document.getElementById('leadsTableWrap').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--red);font-size:13px;">데이터를 불러오지 못했습니다. Firebase 읽기 규칙을 확인해 주세요.</div>`;
   });
+}
+
+function renderLeadsTable(entries) {
+  if (entries.length === 0) {
+    document.getElementById('leadsTableWrap').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-mute);font-size:13px;">이 달의 신청 데이터가 없습니다.</div>`;
+    document.getElementById('leadsBadge').textContent = '0건';
+    return;
+  }
+
+  const countMap = {};
+  entries.forEach(([, v]) => {
+    const gKey = `${v.name}__${v.phone}`;
+    countMap[gKey] = (countMap[gKey] || 0) + 1;
+  });
+
+  const duplicateCount = Object.values(countMap).filter(c => c > 1).length;
+  document.getElementById('leadsBadge').textContent =
+    duplicateCount > 0
+      ? `${entries.length}건 · 중복 ${duplicateCount}명`
+      : `${entries.length}건`;
+
+  const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
+
+  const rows = entries.map(([key, v]) => {
+    const date = v.submittedAt
+      ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '-';
+    const total = countMap[`${v.name}__${v.phone}`];
+    const badge = total > 1
+      ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
+      : '';
+    const reserved = !!v.reserved;
+    const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
+    const btnStyle = reserved
+      ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
+      : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
+    return `
+      <tr style="${rowStyle}">
+        <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
+        <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
+        <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
+        <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
+        <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
+        <td style="width:90px;text-align:left;">
+          <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
+        </td>
+        <td style="width:80px;text-align:left;">
+          <button onclick="deleteLead('${key}')"
+            style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
+            삭제
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('leadsTableWrap').innerHTML = `
+<table style="table-layout:fixed;width:100%;">
+      <thead><tr>
+        <th style="text-align:left;width:160px;">신청 일시</th>
+        <th style="text-align:left;width:100px;">이름</th>
+        <th style="text-align:left;width:140px;">연락처</th>
+        <th style="text-align:left;width:100px;">반려동물</th>
+        <th style="text-align:left;">문의 내용</th>
+        <th style="text-align:left;width:90px;">예약</th>
+        <th style="text-align:left;width:80px;">삭제</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function setLeadsSearchType(type) {
+  window._leadsSearchType = type;
+  const nameBtn = document.getElementById('searchTypeName');
+  const phoneBtn = document.getElementById('searchTypePhone');
+  if (type === 'name') {
+    nameBtn.style.background = 'var(--accent)'; nameBtn.style.color = '#fff'; nameBtn.style.fontWeight = '600';
+    phoneBtn.style.background = 'var(--surface)'; phoneBtn.style.color = 'var(--text-sub)'; phoneBtn.style.fontWeight = 'normal';
+  } else {
+    phoneBtn.style.background = 'var(--accent)'; phoneBtn.style.color = '#fff'; phoneBtn.style.fontWeight = '600';
+    nameBtn.style.background = 'var(--surface)'; nameBtn.style.color = 'var(--text-sub)'; nameBtn.style.fontWeight = 'normal';
+  }
+}
+
+function applyLeadsSearch() {
+  const fromVal = document.getElementById('leadsDateFrom').value;
+  const toVal = document.getElementById('leadsDateTo').value;
+  const keyword = document.getElementById('leadsSearchInput').value.trim();
+  const type = window._leadsSearchType;
+
+  let filtered = window._leadsAllEntries;
+
+  if (fromVal) {
+    const from = new Date(fromVal + 'T00:00:00');
+    filtered = filtered.filter(([, v]) => v.submittedAt && new Date(v.submittedAt) >= from);
+  }
+  if (toVal) {
+    const to = new Date(toVal + 'T23:59:59');
+    filtered = filtered.filter(([, v]) => v.submittedAt && new Date(v.submittedAt) <= to);
+  }
+  if (keyword) {
+    filtered = filtered.filter(([, v]) => {
+      const field = type === 'name' ? (v.name || '') : (v.phone || '');
+      return field.includes(keyword);
+    });
+  }
+
+  renderLeadsTable(filtered);
+}
+
+function resetLeadsSearch() {
+  const mm = String(curMonth).padStart(2, '0');
+  const lastDay = new Date(curYear, curMonth, 0).getDate();
+  document.getElementById('leadsDateFrom').value = `${curYear}-${mm}-01`;
+  document.getElementById('leadsDateTo').value = `${curYear}-${mm}-${String(lastDay).padStart(2, '0')}`;
+  document.getElementById('leadsSearchInput').value = '';
+  setLeadsSearchType('name');
+  renderLeadsTable(window._leadsAllEntries);
 }
 
 function toggleReserved(key, value) {

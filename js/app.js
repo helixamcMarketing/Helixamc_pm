@@ -306,7 +306,6 @@ async function renderLeads() {
   window._leadsSearchType = 'name';
   window._leadsAllEntries = [];
 
-  db.ref('leads').off();
   db.ref('leads').on('value', (snap) => {
     const val = snap.val();
 

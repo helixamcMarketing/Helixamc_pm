@@ -362,7 +362,7 @@ function renderLeadsTable(entries) {
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
   const mediaColors = {
     '메타': '#1877F2', '구글': '#EA4335', '당근': '#FF6F0F',
-    '카카오': '#FAE100', '틱톡': '#000000', '네이버': '#03C75A', '직접유입': '#8A96A8'
+    '카카오': '#FAE100', '틱톡': '#7B2FBE', '네이버': '#03C75A', '직접유입': '#8A96A8'
   };
 
   const rows = entries.map(([key, v]) => {

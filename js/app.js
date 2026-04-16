@@ -503,7 +503,21 @@ function toggleReserved(key, value) {
 async function deleteLead(key) {
   if (!confirm('이 신청 데이터를 삭제하시겠습니까?')) return;
   await db.ref(`leads/${key}`).remove();
-  renderLeads();
+
+  // 삭제 후 전체 leads 다시 읽어서 adlog 재집계
+  const snap = await db.ref('leads').once('value');
+  const val = snap.val();
+  const entries = val ? Object.entries(val) : [];
+  await autoFillMediaDB(entries, curYear, curMonth);
+  await fetchMonthData(curYear, curMonth);
+
+  // 현재 페이지 재렌더링
+  if (curPageId === 'leads_list') renderLeads();
+  else if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') {
+    renderMediaTable(curPageId.replace('adlog_', ''));
+  } else if (curPageId === 'adlog_dashboard') {
+    renderDashboard();
+  }
 }
 
 function showInquiry(text) {

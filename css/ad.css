@@ -384,6 +384,38 @@ a { text-decoration: none; }
   cursor: pointer;
 }
 
+.pet-type-group {
+  display: flex;
+  gap: 12px;
+}
+
+.pet-type-btn {
+  flex: 1;
+  padding: 14px;
+  min-height: 52px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pet-type-btn:hover {
+  border-color: var(--blue);
+}
+
+.pet-type-btn.active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: var(--white);
+  font-weight: 700;
+}
+
 .form-group--consent { margin-top: 4px; }
 
 .checkbox-label {

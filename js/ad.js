@@ -3,6 +3,12 @@
    Firebase Realtime Database 연동
    ========================================= */
 
+function selectPetType(btn) {
+  document.querySelectorAll('.pet-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('petType').value = btn.dataset.value;
+}
+
 (function () {
   'use strict';
 

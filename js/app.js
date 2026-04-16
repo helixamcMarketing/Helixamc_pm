@@ -1337,6 +1337,9 @@ db.ref('leads').on('value', async (snap) => {
   const val = snap.val();
   const entries = val ? Object.entries(val) : [];
   await autoFillMediaDB(entries, curYear, curMonth);
+  // Firebase에 저장 후 캐시 갱신
+  await fetchMonthData(curYear, curMonth);
+  // 현재 페이지 재렌더링
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') {
     renderMediaTable(curPageId.replace('adlog_', ''));
   } else if (curPageId === 'adlog_dashboard') {

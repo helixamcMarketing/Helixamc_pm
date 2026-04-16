@@ -328,6 +328,7 @@ async function renderLeads() {
       .sort((a, b) => a[0].localeCompare(b[0]));
 
     renderLeadsTable(window._leadsAllEntries);
+    autoFillMediaDB(window._leadsAllEntries, curYear, curMonth);
 
   }, (e) => {
     console.error(e);
@@ -358,6 +359,10 @@ function renderLeadsTable(entries) {
       : `${entries.length}건`;
 
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
+  const mediaColors = {
+    '메타': '#1877F2', '구글': '#EA4335', '당근': '#FF6F0F',
+    '카카오': '#FAE100', '틱톡': '#000000', '네이버': '#03C75A', '직접유입': '#8A96A8'
+  };
 
   const rows = entries.map(([key, v]) => {
     const date = v.submittedAt
@@ -367,6 +372,10 @@ function renderLeadsTable(entries) {
     const badge = total > 1
       ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
       : '';
+    const mediaColor = mediaColors[v.media] || '#8A96A8';
+    const mediaBadge = v.media
+      ? `<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${mediaColor}22;color:${mediaColor};">${v.media}</span>`
+      : '<span style="color:var(--text-mute);font-size:11px;">-</span>';
     const reserved = !!v.reserved;
     const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
     const btnStyle = reserved
@@ -375,6 +384,7 @@ function renderLeadsTable(entries) {
     return `
       <tr style="${rowStyle}">
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
+        <td style="width:80px;text-align:left;">${mediaBadge}</td>
         <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
         <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
@@ -395,6 +405,7 @@ function renderLeadsTable(entries) {
 <table style="table-layout:fixed;width:100%;">
       <thead><tr>
         <th style="text-align:left;width:160px;">신청 일시</th>
+        <th style="text-align:left;width:80px;">매체</th>
         <th style="text-align:left;width:100px;">이름</th>
         <th style="text-align:left;width:140px;">연락처</th>
         <th style="text-align:left;width:100px;">반려동물</th>
@@ -773,6 +784,46 @@ async function renderSalesMonthly() {
         </tr></tfoot>
       </table>
     </div>`;
+}
+
+async function autoFillMediaDB(entries, year, month) {
+  const mediaMap = {
+    '메타': 'meta', '구글': 'google', '당근': 'daangn',
+    '카카오': 'kakao', '틱톡': 'tiktok', '네이버': 'naver'
+  };
+
+  // 해당 월 데이터만 필터링 후 매체별 카운트
+  const counts = {};
+  entries.forEach(([, v]) => {
+    if (!v.submittedAt || !v.media) return;
+    const d = new Date(v.submittedAt);
+    if (d.getFullYear() !== year || d.getMonth() + 1 !== month) return;
+    const mediaId = mediaMap[v.media];
+    if (!mediaId) return;
+    counts[mediaId] = (counts[mediaId] || 0) + 1;
+  });
+
+  // 매체별 일별 DB 합산 후 adlog에 반영
+  const monthStr = String(month).padStart(2, '0');
+  for (const [mediaId, total] of Object.entries(counts)) {
+    const snap = await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
+    const existing = snap.val() || {};
+
+    // 기존 일별 데이터에서 DB 총합 계산
+    let existingTotal = 0;
+    Object.values(existing).forEach(row => {
+      if (row.db !== '' && row.db != null) existingTotal += Number(row.db);
+    });
+
+    // 이미 동일한 수치면 스킵
+    if (existingTotal === total) continue;
+
+    // 1일에 전체 DB 수량 반영
+    const day1 = existing['1'] || { spend: '', db: '', revenue: '' };
+    day1.db = total;
+    existing['1'] = day1;
+    await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);
+  }
 }
 
 function renderComingSoon() {

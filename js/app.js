@@ -792,36 +792,30 @@ async function autoFillMediaDB(entries, year, month) {
     '카카오': 'kakao', '틱톡': 'tiktok', '네이버': 'naver'
   };
 
-  // 해당 월 데이터만 필터링 후 매체별 카운트
-  const counts = {};
+  // 해당 월 데이터만 필터링 후 매체별 일별 카운트
+  const dailyCounts = {};
   entries.forEach(([, v]) => {
     if (!v.submittedAt || !v.media) return;
     const d = new Date(v.submittedAt);
     if (d.getFullYear() !== year || d.getMonth() + 1 !== month) return;
     const mediaId = mediaMap[v.media];
     if (!mediaId) return;
-    counts[mediaId] = (counts[mediaId] || 0) + 1;
+    const day = String(d.getDate());
+    if (!dailyCounts[mediaId]) dailyCounts[mediaId] = {};
+    dailyCounts[mediaId][day] = (dailyCounts[mediaId][day] || 0) + 1;
   });
 
-  // 매체별 일별 DB 합산 후 adlog에 반영
   const monthStr = String(month).padStart(2, '0');
-  for (const [mediaId, total] of Object.entries(counts)) {
+  for (const [mediaId, dayCounts] of Object.entries(dailyCounts)) {
     const snap = await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
     const existing = snap.val() || {};
 
-    // 기존 일별 데이터에서 DB 총합 계산
-    let existingTotal = 0;
-    Object.values(existing).forEach(row => {
-      if (row.db !== '' && row.db != null) existingTotal += Number(row.db);
-    });
+    // 일별로 DB 수량 반영 (광고비·매출 기존값은 유지)
+    for (const [day, count] of Object.entries(dayCounts)) {
+      if (!existing[day]) existing[day] = { spend: '', db: '', revenue: '' };
+      existing[day].db = count;
+    }
 
-    // 이미 동일한 수치면 스킵
-    if (existingTotal === total) continue;
-
-    // 1일에 전체 DB 수량 반영
-    const day1 = existing['1'] || { spend: '', db: '', revenue: '' };
-    day1.db = total;
-    existing['1'] = day1;
     await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);
   }
 }

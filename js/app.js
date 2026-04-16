@@ -21,7 +21,7 @@ const MENU = [
       { id: 'adlog_daangn',   label: '당근',     dot: '#FF6F0F' },
       { id: 'adlog_naver',    label: '네이버',   dot: '#03C75A' },
       { id: 'adlog_kakao',    label: '카카오',   dot: '#FAE100' },
-      { id: 'adlog_tiktok',   label: '틱톡',     dot: '#000000' },
+      { id: 'adlog_tiktok',   label: '틱톡',     dot: '#7B2FBE' },
     ]
   },
   {
@@ -49,7 +49,7 @@ const MEDIA = [
   { id:'daangn', name:'당근',   color:'#FF6F0F' },
   { id:'naver',  name:'네이버', color:'#03C75A' },
   { id:'kakao',  name:'카카오', color:'#FAE100' },
-  { id:'tiktok', name:'틱톡',   color:'#000000' },
+  { id:'tiktok', name:'틱톡',   color:'#7B2FBE' },
 ];
 const DAYS_KO = ['일','월','화','수','목','금','토'];
 

@@ -389,6 +389,8 @@ function renderLeadsTable(entries) {
         <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
         <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
+        <td style="width:100px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petBreed || '-'}</td>
+        <td style="width:80px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petAge || '-'}</td>
         <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
         <td style="width:90px;text-align:left;">
           <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
@@ -410,6 +412,8 @@ function renderLeadsTable(entries) {
         <th style="text-align:left;width:100px;">이름</th>
         <th style="text-align:left;width:140px;">연락처</th>
         <th style="text-align:left;width:100px;">반려동물</th>
+        <th style="text-align:left;width:100px;">세부종</th>
+        <th style="text-align:left;width:80px;">나이</th>
         <th style="text-align:left;">문의 내용</th>
         <th style="text-align:left;width:90px;">예약</th>
         <th style="text-align:left;width:80px;">삭제</th>

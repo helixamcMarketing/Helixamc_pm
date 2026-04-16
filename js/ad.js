@@ -135,6 +135,8 @@ function selectPetType(btn) {
       name:        nameInput.value.trim(),
       phone:       '010-' + phoneInput.value.trim(),
       petType:     document.getElementById('petType').value || '미선택',
+      petBreed:    document.getElementById('petBreed').value.trim() || '',
+      petAge:      document.getElementById('petAge').value || '',
       inquiry:     document.getElementById('inquiry').value.trim() || '',
       submittedAt: new Date().toISOString(),
       userAgent:   navigator.userAgent,

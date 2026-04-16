@@ -1335,9 +1335,7 @@ function showLoading() {
 // leads 실시간 리스너 — adlog 자동 갱신
 db.ref('leads').on('value', async (snap) => {
   const val = snap.val();
-  if (!val) return;
-  const entries = Object.entries(val);
-  // autoFillMediaDB 완전히 완료된 후 렌더링
+  const entries = val ? Object.entries(val) : [];
   await autoFillMediaDB(entries, curYear, curMonth);
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') {
     renderMediaTable(curPageId.replace('adlog_', ''));

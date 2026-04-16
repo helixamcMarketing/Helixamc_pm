@@ -1337,10 +1337,12 @@ db.ref('leads').on('value', async (snap) => {
   const val = snap.val();
   if (!val) return;
   const entries = Object.entries(val);
+  // autoFillMediaDB 완전히 완료된 후 렌더링
   await autoFillMediaDB(entries, curYear, curMonth);
-  // 현재 adlog 매체 탭이 열려있으면 즉시 재렌더링
   if (curPageId.startsWith('adlog_') && curPageId !== 'adlog_dashboard') {
     renderMediaTable(curPageId.replace('adlog_', ''));
+  } else if (curPageId === 'adlog_dashboard') {
+    renderDashboard();
   }
 });
 

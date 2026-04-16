@@ -46,18 +46,14 @@
   // ── Phone Auto-formatting ────────────────
   phoneInput.addEventListener('input', function () {
     let val = this.value.replace(/\D/g, '');
-    if (val.length <= 3) {
+    if (val.length <= 4) {
       this.value = val;
-    } else if (val.length <= 7) {
-      this.value = `${val.slice(0, 3)}-${val.slice(3)}`;
     } else {
-      this.value = `${val.slice(0, 3)}-${val.slice(3, 7)}-${val.slice(7, 11)}`;
+      this.value = val.slice(0, 4) + '-' + val.slice(4, 8);
     }
   });
 
   // ── Validation ───────────────────────────
-  const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
-
   function validateName() {
     if (!nameInput.value.trim()) {
       setError(nameInput, nameError, '이름을 입력해 주세요.');
@@ -69,12 +65,13 @@
 
   function validatePhone() {
     const val = phoneInput.value.trim();
+    const phoneRegex = /^\d{4}-\d{4}$/;
     if (!val) {
       setError(phoneInput, phoneError, '연락처를 입력해 주세요.');
       return false;
     }
     if (!phoneRegex.test(val)) {
-      setError(phoneInput, phoneError, '올바른 형식으로 입력해 주세요. (예: 010-1234-5678)');
+      setError(phoneInput, phoneError, '올바른 형식으로 입력해 주세요. (예: 1234-5678)');
       return false;
     }
     clearError(phoneInput, phoneError);
@@ -130,7 +127,7 @@
 
     const payload = {
       name:        nameInput.value.trim(),
-      phone:       phoneInput.value.trim(),
+      phone:       '010-' + phoneInput.value.trim(),
       petType:     document.getElementById('petType').value || '미선택',
       inquiry:     document.getElementById('inquiry').value.trim() || '',
       submittedAt: new Date().toISOString(),

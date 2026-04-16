@@ -348,7 +348,7 @@ function renderLeadsTable(entries) {
 
   const countMap = {};
   entries.forEach(([, v]) => {
-    const gKey = `${v.name}__${v.phone}`;
+    const gKey = v.phone;
     countMap[gKey] = (countMap[gKey] || 0) + 1;
   });
 
@@ -368,7 +368,7 @@ function renderLeadsTable(entries) {
     const date = v.submittedAt
       ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
       : '-';
-    const total = countMap[`${v.name}__${v.phone}`];
+    const total = countMap[v.phone];
     const badge = total > 1
       ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
       : '';

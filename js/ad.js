@@ -120,6 +120,14 @@
     submitBtn.disabled = true;
     submitBtn.classList.add('is-loading');
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSource = urlParams.get('utm_source') || '직접유입';
+    const UTM_LABEL = {
+      meta: '메타', google: '구글', daangn: '당근',
+      kakao: '카카오', tiktok: '틱톡', naver: '네이버'
+    };
+    const mediaLabel = UTM_LABEL[utmSource] || utmSource;
+
     const payload = {
       name:        nameInput.value.trim(),
       phone:       phoneInput.value.trim(),
@@ -127,6 +135,8 @@
       inquiry:     document.getElementById('inquiry').value.trim() || '',
       submittedAt: new Date().toISOString(),
       userAgent:   navigator.userAgent,
+      utm_source:  utmSource,
+      media:       mediaLabel,
     };
 
     try {

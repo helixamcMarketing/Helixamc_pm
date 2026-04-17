@@ -78,6 +78,17 @@
     }
     @media (max-width: 860px) {
       .cert-split { grid-template-columns: 1fr; gap: 48px; }
+      .cert-split__left { position: static; top: auto; }
+    }
+
+    @media (max-width: 640px) {
+      .cert-item__badge {
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        border-radius: 16px;
+      }
+      .cert-item { gap: 18px; }
     }
     .cert-split__left { position: sticky; top: 80px; }
     .cert-split__left .section-label { color: #1a3a6b; }

@@ -76,21 +76,10 @@
       gap: 80px;
       align-items: start;
     }
-    @media (max-width: 860px) {
-      .cert-split { grid-template-columns: 1fr; gap: 48px; }
-      .cert-split__left { position: static; top: auto; }
+    .cert-split__left {
+      position: sticky;
+      top: 80px;
     }
-
-    @media (max-width: 640px) {
-      .cert-item__badge {
-        width: 72px;
-        height: 72px;
-        min-width: 72px;
-        border-radius: 16px;
-      }
-      .cert-item { gap: 18px; }
-    }
-    .cert-split__left { position: sticky; top: 80px; }
     .cert-split__left .section-label { color: #1a3a6b; }
     .cert-split__left .section-title { color: #0B1F3A; margin-bottom: 20px; }
     .cert-split__desc {
@@ -176,6 +165,37 @@
       color: #5a6a80;
       line-height: 1.75;
       margin: 0;
+    }
+
+    /* —— 태블릿·모바일 (960px 이하) —— */
+    @media (max-width: 960px) {
+      .certifications { padding: 72px 0 !important; }
+      .cert-split {
+        grid-template-columns: 1fr !important;
+        gap: 48px !important;
+      }
+      .cert-split__left {
+        position: static !important;
+        top: auto !important;
+      }
+    }
+
+    /* —— 모바일 (640px 이하) —— */
+    @media (max-width: 640px) {
+      .certifications { padding: 56px 0 !important; }
+      .cert-item {
+        gap: 18px !important;
+        padding: 24px 0 !important;
+      }
+      .cert-item__badge {
+        width: 72px !important;
+        height: 72px !important;
+        min-width: 72px !important;
+        border-radius: 16px !important;
+        padding: 6px !important;
+      }
+      .cert-item__title { font-size: 16px !important; }
+      .cert-item__desc { font-size: 13px !important; }
     }
   </style>
 </head>

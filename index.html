@@ -61,13 +61,45 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-0F55R2PE1Q"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-0F55R2PE1Q');</script>
   <!-- End Google Analytics GA4 -->
+
+  <style>
+    /* —— 인증 배지 카드 추가 스타일 —— */
+    .cert-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+      background: rgba(0,180,200,0.12);
+      color: var(--teal);
+      border: 1px solid rgba(0,180,200,0.35);
+    }
+    .strength-card .cert-badge { margin-bottom: 10px; }
+
+    /* Hybrid OR 카드 — 강조 */
+    .strength-card.highlight {
+      background: linear-gradient(135deg, #0B1F3A 0%, #122847 100%);
+      border-color: var(--teal);
+      color: white;
+    }
+    .strength-card.highlight h3 { color: white; }
+    .strength-card.highlight p  { color: rgba(255,255,255,0.65); }
+    .strength-card.highlight .strength-card__num { color: rgba(255,255,255,0.1); }
+    .strength-card.highlight .cert-badge {
+      background: rgba(0,180,200,0.2);
+      color: var(--teal);
+    }
+  </style>
 </head>
 <body>
 
   <!-- ① 메인 배너 -->
   <section class="hero">
     <div class="hero__bg">
-      <!-- 이미지 준비 시: <img src="images/hero.jpg" alt="헬릭스 동물메디컬센터"> -->
       <div class="hero__placeholder"></div>
       <div class="hero__overlay"></div>
     </div>
@@ -77,45 +109,65 @@
         대한민국 동물 의료의<br />새로운 기준
       </h1>
       <p class="hero__desc">
-        응급부터 종양까지, 전문 수의사가 함께합니다.
+        국제 인증 팀, 국내 최초 하이브리드 수술실 운영.<br />
+        반려동물에게 최고 수준의 의료를 제공합니다.
       </p>
       <a href="#form" class="hero__cta">무료 상담 신청하기 →</a>
     </div>
-    <div class="hero__scroll">
-      <span></span>
-    </div>
+    <div class="hero__scroll"><span></span></div>
   </section>
 
-  <!-- ② 병원 강점 / 차별점 -->
+  <!-- ② 헬릭스만의 차별점 -->
   <section class="strengths">
     <div class="container">
       <div class="section-label observe">WHY HELIX</div>
       <h2 class="section-title observe">헬릭스가 다른 이유</h2>
       <div class="strengths__grid">
+
+        <!-- 01. 첨단 영상 진단 -->
         <div class="strength-card observe">
           <div class="strength-card__num">01</div>
-          <div class="strength-card__icon">🏥</div>
-          <h3>24시간 응급 진료</h3>
-          <p>야간·휴일 구분 없이 응급 상황에 즉각 대응합니다. 골든 타임을 지키는 것이 저희의 사명입니다.</p>
+          <div class="strength-card__icon">📡</div>
+          <h3>업계 최고 수준 첨단 영상 진단</h3>
+          <p>CT, MRI, 디지털 X-ray 등 최신 영상 장비를 갖추고 있어 정밀하고 신속한 진단이 가능합니다. 영상 데이터를 바탕으로 최적의 치료 계획을 수립합니다.</p>
         </div>
+
+        <!-- 02. AAHA -->
         <div class="strength-card observe">
           <div class="strength-card__num">02</div>
-          <div class="strength-card__icon">👨‍⚕️</div>
-          <h3>전문 수의사 팀</h3>
-          <p>각 분야 전문 수의사가 팀으로 진료합니다. 복잡한 케이스도 협진을 통해 최선의 치료를 제공합니다.</p>
+          <div class="cert-badge">🏅 국제 인증</div>
+          <div class="strength-card__icon">🌐</div>
+          <h3>AAHA Accreditation</h3>
+          <p>미국동물병원협회(American Animal Hospital Association) 인증 팀. 전 세계 동물병원 중 상위 15%만이 받는 엄격한 기준을 통과한 병원입니다.</p>
         </div>
+
+        <!-- 03. VECCS -->
         <div class="strength-card observe">
           <div class="strength-card__num">03</div>
-          <div class="strength-card__icon">🔬</div>
-          <h3>첨단 의료 장비</h3>
-          <p>CT, MRI, 디지털 X-ray 등 최신 장비를 갖추고 있어 정확한 진단이 가능합니다.</p>
+          <div class="cert-badge">🏅 국제 인증</div>
+          <div class="strength-card__icon">🚨</div>
+          <h3>VECCS Facility Accreditation</h3>
+          <p>응급 및 수술후 케어 분야의 국제 공인 인증(Veterinary Emergency & Critical Care Society). 24시간 응급·수술후 진료 체계를 공식 검증받았습니다.</p>
         </div>
+
+        <!-- 04. CFC GOLD -->
         <div class="strength-card observe">
           <div class="strength-card__num">04</div>
-          <div class="strength-card__icon">🐾</div>
-          <h3>종합 케어 시스템</h3>
-          <p>진단부터 치료, 재활까지 한 곳에서 완결됩니다. 반려동물의 전 생애를 책임집니다.</p>
+          <div class="cert-badge">🐱 고양이 친화 인증</div>
+          <div class="strength-card__icon">🏆</div>
+          <h3>CFC GOLD 등급 인증</h3>
+          <p>Cat Friendly Clinic GOLD 등급 인증. 고양이 전용 대기실, 스트레스 최소화 환경, 고양이 특화 진료 프로토콜을 갖춘 최고 등급의 고양이 친화 진료실입니다.</p>
         </div>
+
+        <!-- 05. Hybrid OR -->
+        <div class="strength-card highlight observe">
+          <div class="strength-card__num">05</div>
+          <div class="cert-badge">⭐ 국내 최초</div>
+          <div class="strength-card__icon">🏥</div>
+          <h3>Hybrid OR — 국내 최초 하이브리드 수술실</h3>
+          <p>Canon Alphenix 등 첨단 영상 진단 시스템을 수술실에 직접 구축. 환자 이동 없이 진단·중재적 시술·외과 수술을 하나의 공간에서 수행하는 통합 수술 체계를 국내 최초로 운영합니다.</p>
+        </div>
+
       </div>
     </div>
   </section>
@@ -238,18 +290,15 @@
               <option value="17년">17년</option>
               <option value="18년">18년</option>
               <option value="19년">19년</option>
-              <option value="20년">20년</option>
-              <option value="21년">21년</option>
-              <option value="22년">22년</option>
-              <option value="23년">23년</option>
-              <option value="24년">24년</option>
-              <option value="25년 이상">25년 이상</option>
+              <option value="20년 이상">20년 이상</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="inquiry">문의 내용</label>
-            <textarea id="inquiry" name="inquiry" placeholder="반려동물의 나이, 증상 등 적어주시면 상담에 도움이 됩니다." rows="4"></textarea>
+            <textarea id="inquiry" name="inquiry"
+                      placeholder="반려동물의 나이, 증상 등 적어주시면 상담에 도움이 됩니다."
+                      rows="4"></textarea>
           </div>
 
           <div class="form-group form-group--consent">

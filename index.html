@@ -128,6 +128,21 @@
       justify-content: center;
       font-size: 24px;
       border: 1px solid #dce4f5;
+      overflow: hidden;
+    }
+    .cert-item__badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .cert-item__badge-fallback {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      width: 100%;
+      height: 100%;
     }
     .cert-item__body { flex: 1; }
     .cert-item__tag {
@@ -233,7 +248,11 @@
         <div class="cert-split__right">
 
           <div class="cert-item observe">
-            <div class="cert-item__badge">🏅</div>
+            <div class="cert-item__badge">
+              <img src="images/cert-aaha.png" alt="AAHA 인증 배지"
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+              <span class="cert-item__badge-fallback">🏅</span>
+            </div>
             <div class="cert-item__body">
               <div class="cert-item__tag">미국동물병원협회 인증</div>
               <h3 class="cert-item__title">AAHA Accreditation</h3>
@@ -242,7 +261,11 @@
           </div>
 
           <div class="cert-item observe">
-            <div class="cert-item__badge">🏅</div>
+            <div class="cert-item__badge">
+              <img src="images/cert-veccs.png" alt="VECCS 인증 배지"
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+              <span class="cert-item__badge-fallback">🏅</span>
+            </div>
             <div class="cert-item__body">
               <div class="cert-item__tag">응급·수술후 케어 국제 인증</div>
               <h3 class="cert-item__title">VECCS Facility Accreditation</h3>
@@ -251,7 +274,11 @@
           </div>
 
           <div class="cert-item observe">
-            <div class="cert-item__badge">🐱</div>
+            <div class="cert-item__badge">
+              <img src="images/cert-cfc.png" alt="CFC GOLD 인증 배지"
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+              <span class="cert-item__badge-fallback">🐱</span>
+            </div>
             <div class="cert-item__body">
               <div class="cert-item__tag">고양이 친화 진료실 최고 등급</div>
               <h3 class="cert-item__title">CFC GOLD 등급</h3>

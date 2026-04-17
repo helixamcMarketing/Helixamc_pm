@@ -63,35 +63,92 @@
   <!-- End Google Analytics GA4 -->
 
   <style>
-    /* —— 인증 배지 카드 추가 스타일 —— */
-    .cert-badge {
+    /* —— 인증 섹션 (좌우 분할) —— */
+    .certifications {
+      background: #ffffff;
+      padding: 100px 0;
+      border-top: 1px solid #f0f2f5;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .cert-split {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 80px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .cert-split { grid-template-columns: 1fr; gap: 48px; }
+    }
+    .cert-split__left { position: sticky; top: 80px; }
+    .cert-split__left .section-label { color: #1a3a6b; }
+    .cert-split__left .section-title { color: #0B1F3A; margin-bottom: 20px; }
+    .cert-split__desc {
+      color: #4a5568;
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 36px;
+    }
+    .cert-split__cta {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      padding: 13px 28px;
+      background: #0B1F3A;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .cert-split__cta:hover { background: #1a3a6b; }
+
+    .cert-split__right {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .cert-item {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 32px 0;
+      border-bottom: 1px solid #edf0f5;
+    }
+    .cert-item:first-child { padding-top: 0; }
+    .cert-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .cert-item__badge {
+      width: 52px;
+      height: 52px;
+      min-width: 52px;
+      background: #f0f4ff;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      border: 1px solid #dce4f5;
+    }
+    .cert-item__body { flex: 1; }
+    .cert-item__tag {
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.06em;
-      padding: 4px 10px;
-      border-radius: 999px;
-      margin-bottom: 14px;
-      background: rgba(0,180,200,0.12);
-      color: var(--teal);
-      border: 1px solid rgba(0,180,200,0.35);
+      letter-spacing: 0.07em;
+      color: #4a7fcb;
+      text-transform: uppercase;
+      margin-bottom: 6px;
     }
-    .strength-card .cert-badge { margin-bottom: 10px; }
-
-    /* Hybrid OR 카드 — 강조 */
-    .strength-card.highlight {
-      background: linear-gradient(135deg, #0B1F3A 0%, #122847 100%);
-      border-color: var(--teal);
-      color: white;
+    .cert-item__title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0B1F3A;
+      margin: 0 0 8px 0;
     }
-    .strength-card.highlight h3 { color: white; }
-    .strength-card.highlight p  { color: rgba(255,255,255,0.65); }
-    .strength-card.highlight .strength-card__num { color: rgba(255,255,255,0.1); }
-    .strength-card.highlight .cert-badge {
-      background: rgba(0,180,200,0.2);
-      color: var(--teal);
+    .cert-item__desc {
+      font-size: 14px;
+      color: #5a6a80;
+      line-height: 1.75;
+      margin: 0;
     }
   </style>
 </head>
@@ -124,7 +181,6 @@
       <h2 class="section-title observe">헬릭스가 다른 이유</h2>
       <div class="strengths__grid">
 
-        <!-- 01. 첨단 영상 진단 -->
         <div class="strength-card observe">
           <div class="strength-card__num">01</div>
           <div class="strength-card__icon">📡</div>
@@ -132,47 +188,83 @@
           <p>CT, MRI, 디지털 X-ray 등 최신 영상 장비를 갖추고 있어 정밀하고 신속한 진단이 가능합니다. 영상 데이터를 바탕으로 최적의 치료 계획을 수립합니다.</p>
         </div>
 
-        <!-- 02. AAHA -->
         <div class="strength-card observe">
           <div class="strength-card__num">02</div>
-          <div class="cert-badge">🏅 국제 인증</div>
-          <div class="strength-card__icon">🌐</div>
-          <h3>AAHA Accreditation</h3>
-          <p>미국동물병원협회(American Animal Hospital Association) 인증 팀. 전 세계 동물병원 중 상위 15%만이 받는 엄격한 기준을 통과한 병원입니다.</p>
+          <div class="strength-card__icon">👨‍⚕️</div>
+          <h3>과목별 전문 수의사 팀</h3>
+          <p>내과, 외과, 영상의학, 종양, 안과 등 각 분야 전문 수의사가 협진합니다. 복잡한 케이스도 팀 접근으로 최적의 치료를 제공합니다.</p>
         </div>
 
-        <!-- 03. VECCS -->
         <div class="strength-card observe">
           <div class="strength-card__num">03</div>
-          <div class="cert-badge">🏅 국제 인증</div>
           <div class="strength-card__icon">🚨</div>
-          <h3>VECCS Facility Accreditation</h3>
-          <p>응급 및 수술후 케어 분야의 국제 공인 인증(Veterinary Emergency & Critical Care Society). 24시간 응급·수술후 진료 체계를 공식 검증받았습니다.</p>
+          <h3>24시간 응급 집중치료</h3>
+          <p>야간·휴일 구분 없이 응급 상황에 즉각 대응합니다. 전담 응급팀과 수술후 모니터링 시스템이 골든 타임을 지킵니다.</p>
         </div>
 
-        <!-- 04. CFC GOLD -->
         <div class="strength-card observe">
           <div class="strength-card__num">04</div>
-          <div class="cert-badge">🐱 고양이 친화 인증</div>
-          <div class="strength-card__icon">🏆</div>
-          <h3>CFC GOLD 등급 인증</h3>
-          <p>Cat Friendly Clinic GOLD 등급 인증. 고양이 전용 대기실, 스트레스 최소화 환경, 고양이 특화 진료 프로토콜을 갖춘 최고 등급의 고양이 친화 진료실입니다.</p>
-        </div>
-
-        <!-- 05. Hybrid OR -->
-        <div class="strength-card highlight observe">
-          <div class="strength-card__num">05</div>
-          <div class="cert-badge">⭐ 국내 최초</div>
           <div class="strength-card__icon">🏥</div>
-          <h3>Hybrid OR — 국내 최초 하이브리드 수술실</h3>
-          <p>Canon Alphenix 등 첨단 영상 진단 시스템을 수술실에 직접 구축. 환자 이동 없이 진단·중재적 시술·외과 수술을 하나의 공간에서 수행하는 통합 수술 체계를 국내 최초로 운영합니다.</p>
+          <h3>Hybrid OR — 국내 최초</h3>
+          <p>Canon Alphenix 등 첨단 영상 장비가 구축된 하이브리드 수술실. 환자 이동 없이 진단부터 수술까지 한 공간에서 수행합니다.</p>
         </div>
 
       </div>
     </div>
   </section>
 
-  <!-- ③ 진료 영역 -->
+  <!-- ③ 국제 인증 -->
+  <section class="certifications">
+    <div class="container">
+      <div class="cert-split observe">
+
+        <!-- 왼쪽: 텍스트 -->
+        <div class="cert-split__left">
+          <div class="section-label">ACCREDITATIONS</div>
+          <h2 class="section-title">국제 공인 인증</h2>
+          <p class="cert-split__desc">
+            헬릭스동물메디컬센터는 국내외 권위있는 기관으로부터 의료 품질과 시설 수준을 공식 검증받았습니다.<br /><br />
+            엄격한 심사 기준을 통과한 인증은 반려동물에게 제공하는 의료의 신뢰를 보장합니다.
+          </p>
+          <a href="#form" class="cert-split__cta">무료 상담 신청 →</a>
+        </div>
+
+        <!-- 오른쪽: 인증 목록 -->
+        <div class="cert-split__right">
+
+          <div class="cert-item observe">
+            <div class="cert-item__badge">🏅</div>
+            <div class="cert-item__body">
+              <div class="cert-item__tag">미국동물병원협회 인증</div>
+              <h3 class="cert-item__title">AAHA Accreditation</h3>
+              <p class="cert-item__desc">American Animal Hospital Association 인증 팀. 전 세계 동물병원 중 상위 15%만이 통과하는 엄격한 의료 기준을 검증받은 병원입니다.</p>
+            </div>
+          </div>
+
+          <div class="cert-item observe">
+            <div class="cert-item__badge">🏅</div>
+            <div class="cert-item__body">
+              <div class="cert-item__tag">응급·수술후 케어 국제 인증</div>
+              <h3 class="cert-item__title">VECCS Facility Accreditation</h3>
+              <p class="cert-item__desc">Veterinary Emergency & Critical Care Society 공인 인증. 24시간 응급·수술후 진료 체계의 수준을 국제 기준으로 공식 검증받았습니다.</p>
+            </div>
+          </div>
+
+          <div class="cert-item observe">
+            <div class="cert-item__badge">🐱</div>
+            <div class="cert-item__body">
+              <div class="cert-item__tag">고양이 친화 진료실 최고 등급</div>
+              <h3 class="cert-item__title">CFC GOLD 등급</h3>
+              <p class="cert-item__desc">Cat Friendly Clinic GOLD 등급 인증. 고양이 전용 대기실, 스트레스 최소화 환경, 고양이 특화 진료 프로토콜을 갖춘 최고 등급 진료실입니다.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 진료 영역 -->
   <section class="departments">
     <div class="container">
       <div class="section-label observe">DEPARTMENTS</div>
@@ -222,7 +314,7 @@
     </div>
   </section>
 
-  <!-- ④ 신청 폼 -->
+  <!-- ⑤ 신청 폼 -->
   <section class="form-section" id="form">
     <div class="container">
       <div class="form-section__inner observe">

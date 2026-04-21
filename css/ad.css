@@ -205,8 +205,29 @@ a { text-decoration: none; }
    ========================================= */
 .strengths {
   padding: var(--section-py) 0;
-  background: var(--white);
+  background: var(--navy);
+  color: var(--white);
+  position: relative;
+  overflow: hidden;
 }
+
+.strengths::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(59,158,255,0.08), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(26,92,186,0.10), transparent 50%);
+  pointer-events: none;
+}
+
+.strengths .container {
+  position: relative;
+  z-index: 1;
+}
+
+.strengths .section-label { color: var(--blue); }
+.strengths .section-title { color: var(--white); }
 
 .strengths__grid {
   display: grid;
@@ -215,18 +236,19 @@ a { text-decoration: none; }
 }
 
 .strength-card {
-  background: var(--off-white);
-  border: 1px solid var(--gray-2);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-md);
   padding: 36px 32px;
   position: relative;
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition);
 }
 
 .strength-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--teal);
+  background: rgba(59,158,255,0.06);
+  border-color: rgba(59,158,255,0.35);
+  box-shadow: 0 12px 40px rgba(59,158,255,0.15);
 }
 
 .strength-card__num {
@@ -236,7 +258,7 @@ a { text-decoration: none; }
   font-family: var(--font-body);
   font-size: 2.2rem;
   font-weight: 800;
-  color: var(--gray-2);
+  color: rgba(255,255,255,0.12);
   line-height: 1;
   letter-spacing: -0.02em;
 }
@@ -249,13 +271,13 @@ a { text-decoration: none; }
 .strength-card h3 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--white);
   margin-bottom: 12px;
 }
 
 .strength-card p {
   font-size: 0.875rem;
-  color: var(--gray-3);
+  color: rgba(255,255,255,0.6);
   line-height: 1.75;
   word-break: keep-all;
 }
@@ -265,29 +287,30 @@ a { text-decoration: none; }
    ========================================= */
 .departments {
   padding: var(--section-py) 0;
-  background: var(--navy);
+  background: var(--white);
 }
 
-.departments .section-label { color: var(--teal); }
-.departments .section-title { color: var(--white); }
+.departments .section-label { color: var(--blue); }
+.departments .section-title { color: var(--navy); }
 
 .dept__grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-  background: rgba(255,255,255,0.06);
+  gap: 1px;
+  background: var(--gray-2);
+  border: 1px solid var(--gray-2);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
 .dept-card {
-  background: rgba(255,255,255,0.03);
+  background: var(--white);
   padding: 32px 24px;
   transition: background var(--transition);
   cursor: default;
 }
 
-.dept-card:hover { background: rgba(0,180,200,0.08); }
+.dept-card:hover { background: var(--blue-soft); }
 
 .dept-card__icon {
   font-size: 1.8rem;
@@ -297,13 +320,13 @@ a { text-decoration: none; }
 .dept-card h3 {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--white);
+  color: var(--navy);
   margin-bottom: 10px;
 }
 
 .dept-card p {
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.5);
+  color: var(--gray-3);
   line-height: 1.7;
   word-break: keep-all;
 }
@@ -609,8 +632,8 @@ a { text-decoration: none; }
    ========================================= */
 .hybrid-or {
   padding: var(--section-py) 0;
-  background: var(--navy);
-  color: var(--white);
+  background: var(--white);
+  color: var(--text);
   position: relative;
   overflow: hidden;
 }
@@ -620,8 +643,8 @@ a { text-decoration: none; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 30%, rgba(0,180,200,0.08), transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(26,92,186,0.10), transparent 55%);
+    radial-gradient(circle at 20% 30%, rgba(59,158,255,0.06), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(59,158,255,0.04), transparent 55%);
   pointer-events: none;
 }
 
@@ -631,13 +654,13 @@ a { text-decoration: none; }
   text-align: center;
 }
 
-.hybrid-or .section-label { color: var(--teal); }
-.hybrid-or .section-title { color: var(--white); }
+.hybrid-or .section-label { color: var(--blue); }
+.hybrid-or .section-title { color: var(--navy); }
 
 .hybrid-or__subtitle {
   font-size: clamp(1rem, 2.2vw, 1.15rem);
-  font-weight: 400;
-  color: rgba(255,255,255,0.75);
+  font-weight: 500;
+  color: var(--navy);
   margin-top: -24px;
   margin-bottom: 24px;
   letter-spacing: 0.02em;
@@ -645,7 +668,7 @@ a { text-decoration: none; }
 
 .hybrid-or__desc {
   font-size: 0.95rem;
-  color: rgba(255,255,255,0.6);
+  color: var(--gray-3);
   line-height: 1.9;
   max-width: 640px;
   margin: 0 auto 56px;
@@ -660,9 +683,9 @@ a { text-decoration: none; }
   aspect-ratio: 16 / 9;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
-  background: linear-gradient(135deg, #122847 0%, #0D2E55 50%, #1A3A6B 100%);
+  border: 1px solid var(--gray-2);
+  box-shadow: 0 24px 60px rgba(11,31,58,0.12);
+  background: linear-gradient(135deg, #F0F4FB 0%, #E4ECF8 50%, #D7E3F4 100%);
 }
 
 .hybrid-or__image img {
@@ -678,7 +701,7 @@ a { text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.3);
+  color: var(--gray-3);
   font-size: 0.85rem;
   letter-spacing: 0.08em;
 }
@@ -693,15 +716,16 @@ a { text-decoration: none; }
 
 .hybrid-or__spec {
   padding: 28px 24px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--off-white);
+  border: 1px solid var(--gray-2);
   border-radius: 12px;
-  transition: background var(--transition), border-color var(--transition);
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
 }
 
 .hybrid-or__spec:hover {
-  background: rgba(0,180,200,0.06);
-  border-color: rgba(0,180,200,0.25);
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  transform: translateY(-2px);
 }
 
 .hybrid-or__spec-icon {
@@ -712,13 +736,13 @@ a { text-decoration: none; }
 .hybrid-or__spec-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--white);
+  color: var(--navy);
   margin-bottom: 8px;
 }
 
 .hybrid-or__spec-desc {
   font-size: 0.82rem;
-  color: rgba(255,255,255,0.55);
+  color: var(--gray-3);
   line-height: 1.7;
   word-break: keep-all;
 }

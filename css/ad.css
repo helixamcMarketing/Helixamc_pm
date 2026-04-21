@@ -265,7 +265,7 @@ a { text-decoration: none; }
 
 .dept__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 2px;
   background: rgba(255,255,255,0.06);
   border-radius: var(--radius-md);
@@ -551,10 +551,7 @@ a { text-decoration: none; }
 .dept__grid .dept-card:nth-child(2).observe { transition-delay: 0.06s; }
 .dept__grid .dept-card:nth-child(3).observe { transition-delay: 0.12s; }
 .dept__grid .dept-card:nth-child(4).observe { transition-delay: 0.18s; }
-.dept__grid .dept-card:nth-child(5).observe { transition-delay: 0.06s; }
-.dept__grid .dept-card:nth-child(6).observe { transition-delay: 0.12s; }
-.dept__grid .dept-card:nth-child(7).observe { transition-delay: 0.18s; }
-.dept__grid .dept-card:nth-child(8).observe { transition-delay: 0.24s; }
+.dept__grid .dept-card:nth-child(5).observe { transition-delay: 0.24s; }
 
 /* =========================================
    ANIMATIONS
@@ -576,7 +573,7 @@ a { text-decoration: none; }
 @media (min-width: 640px) {
   :root { --gutter: 32px; }
   .form-row { grid-template-columns: 1fr 1fr; }
-  .dept__grid { grid-template-columns: repeat(4, 1fr); }
+  .dept__grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* =========================================
@@ -596,6 +593,7 @@ a { text-decoration: none; }
 @media (min-width: 1024px) {
   :root { --gutter: 40px; }
   .strengths__grid { grid-template-columns: repeat(3, 1fr); }
+  .dept__grid { grid-template-columns: repeat(5, 1fr); }
 }
 
 /* =========================================

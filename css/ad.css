@@ -265,6 +265,36 @@ a { text-decoration: none; }
   gap: 24px;
 }
 
+.strengths__question {
+  margin-bottom: 32px;
+  max-width: 820px;
+}
+
+.strengths__question-text {
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 2.6vw, 1.5rem);
+  font-weight: 500;
+  color: var(--blue);
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px 0;
+  word-break: keep-all;
+}
+
+.strengths__question-answer {
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.8;
+  margin: 0;
+  word-break: keep-all;
+}
+
+/* 태블릿·모바일 대응 */
+@media (max-width: 640px) {
+  .strengths__question { margin-bottom: 24px; }
+  .strengths__question-answer { font-size: 14px; }
+}
+
 .strength-card {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.08);
@@ -732,6 +762,104 @@ a { text-decoration: none; }
   0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
   50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
   100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+}
+
+/* =========================================
+   ⑥ BRIDGE — 정서적 브릿지 섹션
+   ========================================= */
+.bridge {
+  padding: calc(var(--section-py) * 0.85) 0;
+  background: #050E1C;
+  color: var(--white);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.bridge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(59,158,255,0.22), transparent 60%),
+    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(59,158,255,0.14), transparent 60%);
+  pointer-events: none;
+}
+
+.bridge::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background:
+    radial-gradient(ellipse 80% 100% at 50% 100%, rgba(59,158,255,0.18), transparent 70%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bridge .container {
+  position: relative;
+  z-index: 1;
+}
+
+.bridge__inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.bridge__title {
+  font-family: var(--font-body);
+  font-size: clamp(1.6rem, 3.8vw, 2.4rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
+  word-break: keep-all;
+}
+
+.bridge__accent {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.bridge__subtitle {
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  color: rgba(255,255,255,0.7);
+  line-height: 1.7;
+  margin: 0 0 36px 0;
+  word-break: keep-all;
+}
+
+.bridge__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 36px;
+  background: var(--white);
+  color: var(--navy);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  box-shadow: 0 0 0 1px rgba(59,158,255,0.35), 0 8px 24px rgba(59,158,255,0.28);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.bridge__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 12px 32px rgba(59,158,255,0.42);
+}
+
+/* 모바일 */
+@media (max-width: 640px) {
+  .bridge { padding: 64px 0; }
+  .bridge__subtitle { margin-bottom: 28px; }
+  .bridge__cta { padding: 14px 30px; font-size: 0.9rem; }
 }
 
 /* =========================================

@@ -26,6 +26,8 @@
 
   --font-display: 'Cormorant Garamond', serif;
   --font-body:    'Noto Sans KR', sans-serif;
+  --font-hand:    'Permanent Marker', 'Caveat', cursive;
+  --font-script:  'Caveat', cursive;
 
   --radius-sm:  6px;
   --radius-md:  14px;
@@ -162,6 +164,12 @@ a { text-decoration: none; }
   word-break: keep-all;
 }
 
+.hero__title-accent {
+  color: #3B9EFF;
+  display: inline-block;
+  position: relative;
+}
+
 .hero__desc {
   font-size: clamp(0.9rem, 2.5vw, 1.05rem);
   font-weight: 300;
@@ -275,14 +283,20 @@ a { text-decoration: none; }
 
 .strength-card__num {
   position: absolute;
-  top: 28px;
+  top: 24px;
   right: 28px;
-  font-family: var(--font-body);
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: rgba(255,255,255,0.12);
+  font-family: var(--font-hand);
+  font-size: 2.4rem;
+  font-weight: 400;
+  color: rgba(59,158,255,0.65);
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  transform: rotate(-6deg);
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+.strength-card:hover .strength-card__num {
+  color: #3B9EFF;
+  transform: rotate(-6deg) scale(1.1);
 }
 
 .strength-card__icon {
@@ -746,6 +760,23 @@ a { text-decoration: none; }
 
 .hybrid-or .section-label { color: var(--blue); }
 .hybrid-or .section-title { color: var(--navy); }
+
+.hybrid-or__script {
+  font-family: var(--font-script);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 700;
+  color: #3B9EFF;
+  line-height: 1;
+  margin: -8px 0 16px;
+  letter-spacing: 0.01em;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+.accent-keyword {
+  color: #3B9EFF;
+  font-weight: 500;
+}
 
 .hybrid-or__subtitle {
   font-size: clamp(1rem, 2.2vw, 1.15rem);

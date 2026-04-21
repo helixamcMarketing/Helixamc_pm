@@ -63,10 +63,10 @@
   <!-- End Google Analytics GA4 -->
 
   <style>
-    /* —— 인증 섹션 (좌우 분할) —— */
+    /* —— 인증 섹션 (B안: 본원 "말보다 인증으로" 스타일) —— */
     .certifications {
       background: #0B1F3A;
-      padding: 100px 0;
+      padding: 110px 0 100px;
       border-top: 1px solid #122847;
       border-bottom: 1px solid #122847;
       position: relative;
@@ -98,29 +98,143 @@
       position: relative;
       z-index: 1;
     }
-    .cert-split {
-      display: grid;
-      grid-template-columns: 1fr 1.4fr;
-      gap: 80px;
-      align-items: start;
+
+    /* 상단 헤더 */
+    .cert-header {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 72px;
     }
-    .cert-split__left {
-      position: sticky;
-      top: 80px;
+    .cert-header .section-label { color: #3B9EFF; }
+    .cert-header__title {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      margin: 0 0 20px 0;
     }
-    .cert-split__left .section-label { color: #3B9EFF; }
-    .cert-split__left .section-title { color: #FFFFFF; margin-bottom: 20px; }
-    .cert-split__desc {
+    .cert-header__desc {
       color: rgba(255,255,255,0.7);
       font-size: 15px;
       line-height: 1.8;
-      margin-bottom: 36px;
+    }
+
+    /* 인증 3개 그리드 */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* 각 인증 카드 */
+    .cert-card {
+      text-align: center;
+      padding: 24px 20px;
+      transition: transform 0.3s ease;
+    }
+    .cert-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .cert-card__num {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .cert-card:hover .cert-card__num {
+      background: rgba(59,158,255,0.2);
+      color: #3B9EFF;
+    }
+
+    .cert-card__badge {
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 28px;
+      background: #FFFFFF;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 18px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .cert-card:hover .cert-card__badge {
+      transform: scale(1.03);
+      box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 20px 40px rgba(59,158,255,0.25);
+    }
+    .cert-card__badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .cert-card__badge-fallback {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cert-card__body {
+      padding: 0 8px;
+    }
+    .cert-card__title-en {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+    }
+    .cert-card__subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin: 0 0 18px 0;
+      line-height: 1.5;
+    }
+    .cert-card__title-ko {
+      font-size: 16px;
+      font-weight: 700;
+      color: #3B9EFF;
+      margin: 0 0 12px 0;
+      letter-spacing: -0.02em;
+    }
+    .cert-card__desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.75;
+      margin: 0;
+      word-break: keep-all;
+    }
+
+    /* 하단 CTA */
+    .cert-cta-wrap {
+      margin-top: 72px;
+      text-align: center;
     }
     .cert-split__cta {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 13px 28px;
+      padding: 14px 32px;
       background: #FFFFFF;
       color: #0B1F3A;
       border-radius: 999px;
@@ -135,100 +249,30 @@
       box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 10px 28px rgba(59,158,255,0.35);
     }
 
-    .cert-split__right {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-    .cert-item {
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-      padding: 32px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .cert-item:first-child { padding-top: 0; }
-    .cert-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .cert-item__badge {
-      width: 88px;
-      height: 88px;
-      min-width: 88px;
-      background: #FFFFFF;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      border: 1px solid rgba(255,255,255,0.2);
-      overflow: hidden;
-      padding: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    }
-    .cert-item__badge img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-    .cert-item__badge-fallback {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      width: 100%;
-      height: 100%;
-    }
-    .cert-item__body { flex: 1; }
-    .cert-item__tag {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.07em;
-      color: #3B9EFF;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .cert-item__title {
-      font-size: 17px;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin: 0 0 8px 0;
-    }
-    .cert-item__desc {
-      font-size: 14px;
-      color: rgba(255,255,255,0.6);
-      line-height: 1.75;
-      margin: 0;
-    }
-
-    /* —— 태블릿·모바일 (960px 이하) —— */
+    /* 태블릿 (960px 이하) */
     @media (max-width: 960px) {
-      .certifications { padding: 72px 0 !important; }
-      .cert-split {
-        grid-template-columns: 1fr !important;
-        gap: 48px !important;
+      .certifications { padding: 80px 0 !important; }
+      .cert-header { margin-bottom: 56px; }
+      .cert-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        max-width: 420px;
       }
-      .cert-split__left {
-        position: static !important;
-        top: auto !important;
-      }
+      .cert-cta-wrap { margin-top: 56px; }
     }
 
-    /* —— 모바일 (640px 이하) —— */
+    /* 모바일 (640px 이하) */
     @media (max-width: 640px) {
-      .certifications { padding: 56px 0 !important; }
-      .cert-item {
-        gap: 18px !important;
-        padding: 24px 0 !important;
+      .certifications { padding: 64px 0 !important; }
+      .cert-header { margin-bottom: 48px; }
+      .cert-card__badge {
+        width: 140px;
+        height: 140px;
+        padding: 16px;
       }
-      .cert-item__badge {
-        width: 72px !important;
-        height: 72px !important;
-        min-width: 72px !important;
-        border-radius: 16px !important;
-        padding: 6px !important;
-      }
-      .cert-item__title { font-size: 16px !important; }
-      .cert-item__desc { font-size: 13px !important; }
+      .cert-card__title-en { font-size: 16px; }
+      .cert-card__title-ko { font-size: 15px; }
+      .cert-card__desc { font-size: 13px; }
     }
   </style>
 </head>
@@ -326,63 +370,71 @@
   <!-- ④ 국제 인증 -->
   <section class="certifications">
     <div class="container">
-      <div class="cert-split observe">
 
-        <!-- 왼쪽: 텍스트 -->
-        <div class="cert-split__left">
-          <div class="section-label">ACCREDITATIONS</div>
-          <h2 class="section-title">국제 공인 인증</h2>
-          <p class="cert-split__desc">
-            헬릭스동물메디컬센터는 국내외 권위있는 기관으로부터 의료 품질과 시설 수준을 공식 검증받았습니다.<br /><br />
-            엄격한 심사 기준을 통과한 인증은 반려동물에게 제공하는 의료의 신뢰를 보장합니다.
-          </p>
-          <a href="#form" class="cert-split__cta">상담 예약 신청하기 →</a>
-        </div>
-
-        <!-- 오른쪽: 인증 목록 -->
-        <div class="cert-split__right">
-
-          <div class="cert-item observe">
-            <div class="cert-item__badge">
-              <img src="images/cert-aaha.png" alt="AAHA 인증 배지"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-              <span class="cert-item__badge-fallback">🏅</span>
-            </div>
-            <div class="cert-item__body">
-              <div class="cert-item__tag">미국동물병원협회 인증</div>
-              <h3 class="cert-item__title">AAHA Accreditation</h3>
-              <p class="cert-item__desc">American Animal Hospital Association 인증 팀. 전 세계 동물병원 중 상위 15%만이 통과하는 엄격한 의료 기준을 검증받은 병원입니다.</p>
-            </div>
-          </div>
-
-          <div class="cert-item observe">
-            <div class="cert-item__badge">
-              <img src="images/cert-veccs.png" alt="VECCS 인증 배지"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-              <span class="cert-item__badge-fallback">🏅</span>
-            </div>
-            <div class="cert-item__body">
-              <div class="cert-item__tag">응급·수술후 케어 국제 인증</div>
-              <h3 class="cert-item__title">VECCS Facility Accreditation</h3>
-              <p class="cert-item__desc">Veterinary Emergency & Critical Care Society 공인 인증. 24시간 응급·수술후 진료 체계의 수준을 국제 기준으로 공식 검증받았습니다.</p>
-            </div>
-          </div>
-
-          <div class="cert-item observe">
-            <div class="cert-item__badge">
-              <img src="images/cert-cfc.png" alt="CFC GOLD 인증 배지"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-              <span class="cert-item__badge-fallback">🐱</span>
-            </div>
-            <div class="cert-item__body">
-              <div class="cert-item__tag">고양이 친화 진료실 최고 등급</div>
-              <h3 class="cert-item__title">CFC GOLD 등급</h3>
-              <p class="cert-item__desc">Cat Friendly Clinic GOLD 등급 인증. 고양이 전용 대기실, 스트레스 최소화 환경, 고양이 특화 진료 프로토콜을 갖춘 최고 등급 진료실입니다.</p>
-            </div>
-          </div>
-
-        </div>
+      <!-- 상단 헤더 (중앙 정렬) -->
+      <div class="cert-header observe">
+        <div class="section-label">ACCREDITATIONS</div>
+        <h2 class="cert-header__title">말보다 인증으로.</h2>
+        <p class="cert-header__desc">
+          헬릭스가 가진 세 가지 공인 인증으로 환자를 향한 우리의 진심을 말합니다.
+        </p>
       </div>
+
+      <!-- 인증 3개 그리드 -->
+      <div class="cert-grid">
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">1</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-aaha.png" alt="AAHA 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🏅</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">AAHA Accreditation</h3>
+            <p class="cert-card__subtitle">(AAHA: American Animal Hospital Association)</p>
+            <h4 class="cert-card__title-ko">미국동물병원협회 인증</h4>
+            <p class="cert-card__desc">전 세계 동물병원 중 상위 15%만이 통과하는 엄격한 의료 기준을 검증받은 병원입니다.</p>
+          </div>
+        </div>
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">2</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-veccs.png" alt="VECCS 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🏅</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">VECCS Facility Accreditation</h3>
+            <p class="cert-card__subtitle">(Veterinary Emergency and Critical Care Society)</p>
+            <h4 class="cert-card__title-ko">응급 및 중환자 케어 인증</h4>
+            <p class="cert-card__desc">24시간 응급·수술후 진료 체계의 수준을 국제 기준으로 공식 검증받았습니다.</p>
+          </div>
+        </div>
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">3</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-cfc.png" alt="CFC GOLD 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🐱</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">CFC (Cat Friendly Clinic)<br/>GOLD 등급</h3>
+            <p class="cert-card__subtitle">by 세계고양이수의학회(ISFM)</p>
+            <h4 class="cert-card__title-ko">고양이 친화 진료소 인증</h4>
+            <p class="cert-card__desc">고양이 전용 대기실, 스트레스 최소화 환경, 특화 진료 프로토콜을 갖춘 최고 등급 진료실입니다.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 하단 CTA -->
+      <div class="cert-cta-wrap observe">
+        <a href="#form" class="cert-split__cta">상담 예약 신청하기 →</a>
+      </div>
+
     </div>
   </section>
 

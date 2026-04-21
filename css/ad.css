@@ -833,6 +833,11 @@ a { text-decoration: none; }
   word-break: keep-all;
 }
 
+.bridge__accent-sub {
+  color: var(--blue);
+  font-weight: 600;
+}
+
 .bridge__cta {
   display: inline-flex;
   align-items: center;

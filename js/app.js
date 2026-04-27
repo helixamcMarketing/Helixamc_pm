@@ -365,6 +365,20 @@ function renderLeadsTable(entries) {
     '카카오': '#FAE100', '틱톡': '#7B2FBE', '네이버': '#03C75A', '직접유입': '#8A96A8'
   };
 
+  const formatReservedAt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yy}.${mm}.${dd} ${hh}:${mi}`;
+  };
+
+  const escapeAttr = (s) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
   const rows = entries.map(([key, v]) => {
     const date = v.submittedAt
       ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
@@ -378,10 +392,21 @@ function renderLeadsTable(entries) {
       ? `<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${mediaColor}22;color:${mediaColor};">${v.media}</span>`
       : '<span style="color:var(--text-mute);font-size:11px;">-</span>';
     const reserved = !!v.reserved;
+    const reservedAt = v.reservedAt || '';
     const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
     const btnStyle = reserved
       ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
       : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
+
+    const reservedAtDisplay = reservedAt
+      ? `<span style="color:var(--text);font-size:12px;font-family:var(--font-mono);">${formatReservedAt(reservedAt)}</span>`
+      : '<span style="color:var(--text-mute);font-size:11px;">-</span>';
+
+    const memo = v.memo || '';
+    const memoCell = memo
+      ? `<span style="color:var(--text-sub);font-size:12px;">${escapeAttr(memo.length > 20 ? memo.slice(0, 20) + '…' : memo)}</span>`
+      : `<span style="padding:3px 10px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:11px;">메모 작성</span>`;
+
     return `
       <tr style="${rowStyle}">
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
@@ -392,9 +417,11 @@ function renderLeadsTable(entries) {
         <td style="width:100px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petBreed || '-'}</td>
         <td style="width:80px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petAge || '-'}</td>
         <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
+        <td onclick="openMemoModal('${key}')" style="width:160px;text-align:left;cursor:pointer;" title="클릭하여 메모 작성/수정">${memoCell}</td>
         <td style="width:90px;text-align:left;">
-          <button onclick="toggleReserved('${key}',${!reserved})" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
+          <button onclick="openReserveModal('${key}')" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
         </td>
+        <td style="width:140px;text-align:left;cursor:pointer;" onclick="openReserveModal('${key}')" title="클릭하여 예약일 변경">${reservedAtDisplay}</td>
         <td style="width:80px;text-align:left;">
           <button onclick="deleteLead('${key}')"
             style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
@@ -415,7 +442,9 @@ function renderLeadsTable(entries) {
         <th style="text-align:left;width:100px;">세부종</th>
         <th style="text-align:left;width:80px;">나이</th>
         <th style="text-align:left;">문의 내용</th>
+        <th style="text-align:left;width:160px;">상담 메모</th>
         <th style="text-align:left;width:90px;">예약</th>
+        <th style="text-align:left;width:140px;">예약일</th>
         <th style="text-align:left;width:80px;">삭제</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -475,7 +504,13 @@ function downloadLeadsCsv() {
   const entries = window._leadsDisplayedEntries || [];
   if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-  const header = '신청일시,이름,연락처,반려동물,문의내용,예약상태';
+  const header = '신청일시,매체,이름,연락처,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
+  const fmt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  };
   const rows = entries.map(([, v]) => {
     const date = v.submittedAt
       ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
@@ -483,11 +518,17 @@ function downloadLeadsCsv() {
     const esc = (s) => '"' + String(s || '').replace(/"/g, '""') + '"';
     return [
       esc(date),
+      esc(v.media || ''),
       esc(v.name),
       esc(v.phone),
       esc(petTypeLabel[v.petType] || v.petType || ''),
+      esc(v.petBreed || ''),
+      esc(v.petAge || ''),
       esc(v.inquiry),
-      esc(v.reserved ? '예약완료' : '미예약')
+      esc(v.reserved ? '예약완료' : '미예약'),
+      esc(fmt(v.reservedAt)),
+      esc(v.memo || ''),
+      esc(fmt(v.memoUpdatedAt))
     ].join(',');
   });
   const csv = '\uFEFF' + header + '\n' + rows.join('\n');
@@ -501,8 +542,74 @@ function downloadLeadsCsv() {
   URL.revokeObjectURL(url);
 }
 
-function toggleReserved(key, value) {
-  db.ref(`leads/${key}/reserved`).set(value);
+// 예약 모달 열기
+async function openReserveModal(key) {
+  const snap = await db.ref(`leads/${key}`).once('value');
+  const v = snap.val() || {};
+  const reserved = !!v.reserved;
+  const reservedAt = v.reservedAt || '';
+
+  // datetime-local input은 'YYYY-MM-DDTHH:MM' 형식
+  let inputValue = '';
+  if (reservedAt) {
+    const d = new Date(reservedAt);
+    if (!isNaN(d.getTime())) {
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      inputValue = `${yy}-${mm}-${dd}T${hh}:${mi}`;
+    }
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'reserveModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px;">📅 예약 일정</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:20px;">${v.name || '-'} · ${v.phone || '-'}</div>
+      <input type="datetime-local" id="reserveDateInput" value="${inputValue}"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-family:var(--font-mono);font-size:14px;color:var(--text);outline:none;margin-bottom:18px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="saveReservation('${key}')" style="padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">${reserved ? '예약일 변경' : '예약 완료'}</button>
+        ${reserved ? `<button onclick="cancelReservation('${key}')" style="padding:12px;border-radius:10px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">예약 취소</button>` : ''}
+        <button onclick="closeReserveModal()" style="padding:12px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">닫기</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeReserveModal(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('reserveDateInput')?.focus(), 100);
+}
+
+function closeReserveModal() {
+  const el = document.getElementById('reserveModalOverlay');
+  if (el) el.remove();
+}
+
+async function saveReservation(key) {
+  const input = document.getElementById('reserveDateInput');
+  const val = input?.value || '';
+  if (!val) {
+    alert('예약 일시를 선택해 주세요.');
+    return;
+  }
+  await db.ref(`leads/${key}`).update({
+    reserved: true,
+    reservedAt: val
+  });
+  closeReserveModal();
+}
+
+async function cancelReservation(key) {
+  if (!confirm('예약을 취소하시겠습니까?')) return;
+  await db.ref(`leads/${key}`).update({
+    reserved: false,
+    reservedAt: ''
+  });
+  closeReserveModal();
 }
 
 async function deleteLead(key) {
@@ -536,6 +643,60 @@ function showInquiry(text) {
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+// 상담 메모 모달
+async function openMemoModal(key) {
+  const snap = await db.ref(`leads/${key}`).once('value');
+  const v = snap.val() || {};
+  const memo = v.memo || '';
+  const memoUpdatedAt = v.memoUpdatedAt || '';
+
+  const formatUpdatedAt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  };
+
+  const updatedDisplay = memoUpdatedAt
+    ? `<div style="font-size:11px;color:var(--text-mute);margin-bottom:12px;">마지막 수정: ${formatUpdatedAt(memoUpdatedAt)}</div>`
+    : '';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'memoModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px;">📝 상담 메모</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">${v.name || '-'} · ${v.phone || '-'}</div>
+      ${updatedDisplay}
+      <textarea id="memoTextInput" placeholder="상담 내용을 입력하세요" rows="6"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);outline:none;resize:vertical;line-height:1.7;margin-bottom:18px;">${memo.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeMemoModal()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">닫기</button>
+        <button onclick="saveMemo('${key}')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">저장</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeMemoModal(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('memoTextInput')?.focus(), 100);
+}
+
+function closeMemoModal() {
+  const el = document.getElementById('memoModalOverlay');
+  if (el) el.remove();
+}
+
+async function saveMemo(key) {
+  const input = document.getElementById('memoTextInput');
+  const val = (input?.value || '').trim();
+  await db.ref(`leads/${key}`).update({
+    memo: val,
+    memoUpdatedAt: new Date().toISOString()
+  });
+  closeMemoModal();
 }
 
 /* ══════════════════════════════════════════════

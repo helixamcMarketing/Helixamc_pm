@@ -413,27 +413,26 @@ function renderLeadsTable(entries) {
     const inquiryText = v.inquiry ? escapeHtml(v.inquiry) : '<span style="color:var(--text-mute);">문의 내용이 없습니다</span>';
 
     return `
-      <tr class="lead-row" data-key="${key}" style="${rowStyle}cursor:pointer;" onclick="toggleLeadDetail('${key}', event)">
-        <td style="width:36px;text-align:center;color:var(--text-mute);font-size:11px;" class="expand-icon">▶</td>
+      <tr style="${rowStyle}">
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
         <td style="width:80px;text-align:left;">${mediaBadge}</td>
         <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
-        <td style="text-align:left;cursor:pointer;" onclick="event.stopPropagation();openMemoModal('${key}')" title="클릭하여 메모 작성/수정">${memoCell}</td>
+        <td style="text-align:left;cursor:pointer;" onclick="openMemoModal('${key}')" title="클릭하여 메모 작성/수정">${memoCell}</td>
         <td style="width:100px;text-align:left;">
-          <button onclick="event.stopPropagation();openReserveModal('${key}')" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
+          <button onclick="openReserveModal('${key}')" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
         </td>
-        <td style="width:150px;text-align:left;cursor:pointer;" onclick="event.stopPropagation();openReserveModal('${key}')" title="클릭하여 예약일 변경">${reservedAtDisplay}</td>
+        <td style="width:150px;text-align:left;cursor:pointer;" onclick="openReserveModal('${key}')" title="클릭하여 예약일 변경">${reservedAtDisplay}</td>
         <td style="width:80px;text-align:left;">
-          <button onclick="event.stopPropagation();deleteLead('${key}')"
+          <button onclick="deleteLead('${key}')"
             style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
             삭제
           </button>
         </td>
       </tr>
-      <tr class="lead-detail-row" data-key="${key}" style="display:none;">
-        <td colspan="9" style="padding:0;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
-          <div style="padding:18px 24px 22px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px 28px;">
+      <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
+        <td colspan="8" style="padding:0;">
+          <div style="padding:16px 24px 20px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 28px;">
             <div>
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">반려동물</div>
               <div style="font-size:13px;color:var(--text);">${petTypeText}</div>
@@ -458,7 +457,6 @@ function renderLeadsTable(entries) {
   document.getElementById('leadsTableWrap').innerHTML = `
 <table style="table-layout:fixed;width:100%;">
       <thead><tr>
-        <th style="width:36px;"></th>
         <th style="text-align:left;width:160px;">신청 일시</th>
         <th style="text-align:left;width:80px;">매체</th>
         <th style="text-align:left;width:100px;">이름</th>
@@ -664,18 +662,6 @@ function showInquiry(text) {
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
-}
-
-// 행 펼침/접힘 토글
-function toggleLeadDetail(key, ev) {
-  if (ev) ev.stopPropagation();
-  const detailRow = document.querySelector(`tr.lead-detail-row[data-key="${key}"]`);
-  const mainRow = document.querySelector(`tr.lead-row[data-key="${key}"]`);
-  if (!detailRow || !mainRow) return;
-  const iconCell = mainRow.querySelector('.expand-icon');
-  const isOpen = detailRow.style.display !== 'none';
-  detailRow.style.display = isOpen ? 'none' : 'table-row';
-  if (iconCell) iconCell.textContent = isOpen ? '▶' : '▼';
 }
 
 // 상담 메모 모달

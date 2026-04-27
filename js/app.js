@@ -377,7 +377,7 @@ function renderLeadsTable(entries) {
     return `${yy}.${mm}.${dd} ${hh}:${mi}`;
   };
 
-  const escapeAttr = (s) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   const rows = entries.map(([key, v]) => {
     const date = v.submittedAt
@@ -404,29 +404,53 @@ function renderLeadsTable(entries) {
 
     const memo = v.memo || '';
     const memoCell = memo
-      ? `<span style="color:var(--text-sub);font-size:12px;">${escapeAttr(memo.length > 20 ? memo.slice(0, 20) + '…' : memo)}</span>`
+      ? `<span style="color:var(--text-sub);font-size:12px;">${escapeHtml(memo.length > 16 ? memo.slice(0, 16) + '…' : memo)}</span>`
       : `<span style="padding:3px 10px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:11px;">메모 작성</span>`;
 
+    const petTypeText = petTypeLabel[v.petType] || v.petType || '-';
+    const petBreedText = v.petBreed || '-';
+    const petAgeText = v.petAge || '-';
+    const inquiryText = v.inquiry ? escapeHtml(v.inquiry) : '<span style="color:var(--text-mute);">문의 내용이 없습니다</span>';
+
     return `
-      <tr style="${rowStyle}">
+      <tr class="lead-row" data-key="${key}" style="${rowStyle}cursor:pointer;" onclick="toggleLeadDetail('${key}', event)">
+        <td style="width:36px;text-align:center;color:var(--text-mute);font-size:11px;" class="expand-icon">▶</td>
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
         <td style="width:80px;text-align:left;">${mediaBadge}</td>
         <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
-        <td style="width:100px;text-align:left;">${petTypeLabel[v.petType] || v.petType || '-'}</td>
-        <td style="width:100px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petBreed || '-'}</td>
-        <td style="width:80px;text-align:left;color:var(--text-sub);font-size:12px;">${v.petAge || '-'}</td>
-        <td onclick="showInquiry('${(v.inquiry || '-').replace(/'/g, "\\'")}')" style="text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sub);font-size:12px;cursor:pointer;" title="클릭하여 전체 내용 보기">${v.inquiry || '-'}</td>
-        <td onclick="openMemoModal('${key}')" style="width:160px;text-align:left;cursor:pointer;" title="클릭하여 메모 작성/수정">${memoCell}</td>
-        <td style="width:90px;text-align:left;">
-          <button onclick="openReserveModal('${key}')" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
+        <td style="text-align:left;cursor:pointer;" onclick="event.stopPropagation();openMemoModal('${key}')" title="클릭하여 메모 작성/수정">${memoCell}</td>
+        <td style="width:100px;text-align:left;">
+          <button onclick="event.stopPropagation();openReserveModal('${key}')" style="${btnStyle}">${reserved ? '예약완료' : '미예약'}</button>
         </td>
-        <td style="width:140px;text-align:left;cursor:pointer;" onclick="openReserveModal('${key}')" title="클릭하여 예약일 변경">${reservedAtDisplay}</td>
+        <td style="width:150px;text-align:left;cursor:pointer;" onclick="event.stopPropagation();openReserveModal('${key}')" title="클릭하여 예약일 변경">${reservedAtDisplay}</td>
         <td style="width:80px;text-align:left;">
-          <button onclick="deleteLead('${key}')"
+          <button onclick="event.stopPropagation();deleteLead('${key}')"
             style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">
             삭제
           </button>
+        </td>
+      </tr>
+      <tr class="lead-detail-row" data-key="${key}" style="display:none;">
+        <td colspan="9" style="padding:0;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
+          <div style="padding:18px 24px 22px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px 28px;">
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">반려동물</div>
+              <div style="font-size:13px;color:var(--text);">${petTypeText}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">세부종</div>
+              <div style="font-size:13px;color:var(--text);">${escapeHtml(petBreedText)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">나이</div>
+              <div style="font-size:13px;color:var(--text);">${escapeHtml(petAgeText)}</div>
+            </div>
+            <div style="grid-column:1 / -1;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">문의 내용</div>
+              <div style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap;word-break:break-all;">${inquiryText}</div>
+            </div>
+          </div>
         </td>
       </tr>`;
   }).join('');
@@ -434,17 +458,14 @@ function renderLeadsTable(entries) {
   document.getElementById('leadsTableWrap').innerHTML = `
 <table style="table-layout:fixed;width:100%;">
       <thead><tr>
+        <th style="width:36px;"></th>
         <th style="text-align:left;width:160px;">신청 일시</th>
         <th style="text-align:left;width:80px;">매체</th>
         <th style="text-align:left;width:100px;">이름</th>
         <th style="text-align:left;width:140px;">연락처</th>
-        <th style="text-align:left;width:100px;">반려동물</th>
-        <th style="text-align:left;width:100px;">세부종</th>
-        <th style="text-align:left;width:80px;">나이</th>
-        <th style="text-align:left;">문의 내용</th>
-        <th style="text-align:left;width:160px;">상담 메모</th>
-        <th style="text-align:left;width:90px;">예약</th>
-        <th style="text-align:left;width:140px;">예약일</th>
+        <th style="text-align:left;">상담 메모</th>
+        <th style="text-align:left;width:100px;">예약</th>
+        <th style="text-align:left;width:150px;">예약일</th>
         <th style="text-align:left;width:80px;">삭제</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -643,6 +664,18 @@ function showInquiry(text) {
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+// 행 펼침/접힘 토글
+function toggleLeadDetail(key, ev) {
+  if (ev) ev.stopPropagation();
+  const detailRow = document.querySelector(`tr.lead-detail-row[data-key="${key}"]`);
+  const mainRow = document.querySelector(`tr.lead-row[data-key="${key}"]`);
+  if (!detailRow || !mainRow) return;
+  const iconCell = mainRow.querySelector('.expand-icon');
+  const isOpen = detailRow.style.display !== 'none';
+  detailRow.style.display = isOpen ? 'none' : 'table-row';
+  if (iconCell) iconCell.textContent = isOpen ? '▶' : '▼';
 }
 
 // 상담 메모 모달

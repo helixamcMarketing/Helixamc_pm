@@ -411,6 +411,7 @@ function renderLeadsTable(entries) {
     const petBreedText = v.petBreed || '-';
     const petAgeText = v.petAge || '-';
     const inquiryText = v.inquiry ? escapeHtml(v.inquiry) : '<span style="color:var(--text-mute);">문의 내용이 없습니다</span>';
+    const utmContentText = v.utm_content || '-';
 
     return `
       <tr style="${rowStyle}">
@@ -444,6 +445,10 @@ function renderLeadsTable(entries) {
             <div>
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">나이</div>
               <div style="font-size:13px;color:var(--text);">${escapeHtml(petAgeText)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">유입 소재</div>
+              <div style="font-size:13px;color:var(--text);">${escapeHtml(utmContentText)}</div>
             </div>
             <div style="grid-column:1 / -1;">
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">문의 내용</div>
@@ -523,7 +528,7 @@ function downloadLeadsCsv() {
   const entries = window._leadsDisplayedEntries || [];
   if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-  const header = '신청일시,매체,이름,연락처,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
+  const header = '신청일시,매체,소재,이름,연락처,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
   const fmt = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -538,6 +543,7 @@ function downloadLeadsCsv() {
     return [
       esc(date),
       esc(v.media || ''),
+      esc(v.utm_content || ''),
       esc(v.name),
       esc(v.phone),
       esc(petTypeLabel[v.petType] || v.petType || ''),

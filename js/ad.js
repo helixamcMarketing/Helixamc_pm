@@ -125,6 +125,9 @@ function selectPetType(btn) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const utmSource = urlParams.get('utm_source') || '직접유입';
+    const utmMedium = urlParams.get('utm_medium') || '';
+    const utmCampaign = urlParams.get('utm_campaign') || '';
+    const utmContent = urlParams.get('utm_content') || '';
     const UTM_LABEL = {
       meta: '메타', google: '구글', daangn: '당근',
       kakao: '카카오', tiktok: '틱톡', naver: '네이버'
@@ -141,6 +144,9 @@ function selectPetType(btn) {
       submittedAt: new Date().toISOString(),
       userAgent:   navigator.userAgent,
       utm_source:  utmSource,
+      utm_medium:  utmMedium,
+      utm_campaign: utmCampaign,
+      utm_content: utmContent,
       media:       mediaLabel,
     };
 

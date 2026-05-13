@@ -705,6 +705,30 @@ a { text-decoration: none; }
   margin-bottom: 12px;
 }
 .success-message p { font-size: 0.9rem; color: var(--gray-3); }
+.success-message__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  padding: 16px 36px;
+  background: var(--navy);
+  color: var(--white);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(59,158,255,0.35), 0 8px 24px rgba(59,158,255,0.28);
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+  min-height: 52px;
+  -webkit-tap-highlight-color: transparent;
+}
+.success-message__cta:hover {
+  background: var(--navy-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 12px 32px rgba(59,158,255,0.42);
+}
 
 /* =========================================
    FOOTER

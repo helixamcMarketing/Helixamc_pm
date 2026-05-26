@@ -354,12 +354,10 @@ function renderLeadsTable(entries) {
   });
 
   const duplicateCount = Object.values(countMap).filter(c => c > 1).length;
-  const invalidCount = entries.filter(([, vv]) => vv.invalid).length;
-  const validCount = entries.length - invalidCount;
-  let badgeHtml = `${validCount}건`;
-  if (invalidCount > 0) badgeHtml += ` <span style="color:var(--red);">(불량 ${invalidCount}건)</span>`;
-  if (duplicateCount > 0) badgeHtml += ` · 중복 ${duplicateCount}명`;
-  document.getElementById('leadsBadge').innerHTML = badgeHtml;
+  document.getElementById('leadsBadge').textContent =
+    duplicateCount > 0
+      ? `${entries.length}건 · 중복 ${duplicateCount}명`
+      : `${entries.length}건`;
 
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
   const mediaColors = {
@@ -391,17 +389,11 @@ function renderLeadsTable(entries) {
       : '';
     const mediaColor = mediaColors[v.media] || '#8A96A8';
     const mediaBadge = v.media
-      ? `<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${mediaColor}22;color:${mediaColor};${invalid?'text-decoration:line-through;':''}">${v.media}</span>`
+      ? `<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${mediaColor}22;color:${mediaColor};">${v.media}</span>`
       : '<span style="color:var(--text-mute);font-size:11px;">-</span>';
     const reserved = !!v.reserved;
-    const invalid = !!v.invalid;
     const reservedAt = v.reservedAt || '';
-    const rowStyle = invalid
-      ? 'border-left:3px solid var(--red);background:rgba(255,69,58,0.04);opacity:0.5;'
-      : (reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '');
-    const invalidBtnStyle = invalid
-      ? 'padding:5px 12px;background:var(--red);color:#fff;border:1px solid var(--red);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
-      : 'padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:12px;cursor:pointer;';
+    const rowStyle = reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '';
     const btnStyle = reserved
       ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
       : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
@@ -425,9 +417,6 @@ function renderLeadsTable(entries) {
       <tr style="${rowStyle}">
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
         <td style="width:80px;text-align:left;">${mediaBadge}</td>
-        <td style="width:90px;text-align:left;">
-          <button onclick="toggleInvalid('${key}')" style="${invalidBtnStyle}">${invalid ? '불량' : '정상'}</button>
-        </td>
         <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
         <td style="text-align:left;cursor:pointer;" onclick="openMemoModal('${key}')" title="클릭하여 메모 작성/수정">${memoCell}</td>
@@ -443,7 +432,7 @@ function renderLeadsTable(entries) {
         </td>
       </tr>
       <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
-        <td colspan="9" style="padding:0;">
+        <td colspan="8" style="padding:0;">
           <div style="padding:16px 24px 20px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 28px;">
             <div>
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">반려동물</div>
@@ -475,7 +464,6 @@ function renderLeadsTable(entries) {
       <thead><tr>
         <th style="text-align:left;width:160px;">신청 일시</th>
         <th style="text-align:left;width:80px;">매체</th>
-        <th style="text-align:left;width:90px;">불량</th>
         <th style="text-align:left;width:100px;">이름</th>
         <th style="text-align:left;width:140px;">연락처</th>
         <th style="text-align:left;">상담 메모</th>
@@ -540,7 +528,7 @@ function downloadLeadsCsv() {
   const entries = window._leadsDisplayedEntries || [];
   if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-  const header = '신청일시,매체,소재,이름,연락처,불량여부,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
+  const header = '신청일시,매체,소재,이름,연락처,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
   const fmt = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -558,7 +546,6 @@ function downloadLeadsCsv() {
       esc(v.utm_content || ''),
       esc(v.name),
       esc(v.phone),
-      esc(v.invalid ? '불량' : '정상'),
       esc(petTypeLabel[v.petType] || v.petType || ''),
       esc(v.petBreed || ''),
       esc(v.petAge || ''),
@@ -668,17 +655,6 @@ async function deleteLead(key) {
   } else if (curPageId === 'adlog_dashboard') {
     renderDashboard();
   }
-}
-
-async function toggleInvalid(key) {
-  if (!isUnlocked) { openModal(); return; }
-  const snap = await db.ref(`leads/${key}`).once('value');
-  const v = snap.val() || {};
-  const newInvalid = !v.invalid;
-  await db.ref(`leads/${key}`).update({
-    invalid: newInvalid,
-    invalidAt: newInvalid ? new Date().toISOString() : ''
-  });
 }
 
 function showInquiry(text) {
@@ -1022,7 +998,6 @@ async function autoFillMediaDB(entries, year, month) {
   };
 
   const dailyCounts = {};
-  const dailyInvalidCounts = {};
   entries.forEach(([, v]) => {
     if (!v.submittedAt || !v.media) return;
     const d = new Date(v.submittedAt);
@@ -1030,13 +1005,8 @@ async function autoFillMediaDB(entries, year, month) {
     const mediaId = mediaMap[v.media];
     if (!mediaId) return;
     const day = String(d.getDate());
-    if (v.invalid) {
-      if (!dailyInvalidCounts[mediaId]) dailyInvalidCounts[mediaId] = {};
-      dailyInvalidCounts[mediaId][day] = (dailyInvalidCounts[mediaId][day] || 0) + 1;
-    } else {
-      if (!dailyCounts[mediaId]) dailyCounts[mediaId] = {};
-      dailyCounts[mediaId][day] = (dailyCounts[mediaId][day] || 0) + 1;
-    }
+    if (!dailyCounts[mediaId]) dailyCounts[mediaId] = {};
+    dailyCounts[mediaId][day] = (dailyCounts[mediaId][day] || 0) + 1;
   });
 
   const monthStr = String(month).padStart(2, '0');
@@ -1046,23 +1016,18 @@ async function autoFillMediaDB(entries, year, month) {
     const snap = await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
     const existing = snap.val() || {};
 
+    // 기존 db 값 전부 초기화
     Object.keys(existing).forEach(day => {
-      if (existing[day]) {
+      if (existing[day] && existing[day].db !== '' && existing[day].db != null) {
         existing[day].db = '';
-        existing[day].invalidDb = '';
       }
     });
 
+    // 집계된 값 반영
     const dayCounts = dailyCounts[mediaId] || {};
     for (const [day, count] of Object.entries(dayCounts)) {
-      if (!existing[day]) existing[day] = { spend: '', db: '', revenue: '', invalidDb: '' };
+      if (!existing[day]) existing[day] = { spend: '', db: '', revenue: '' };
       existing[day].db = count;
-    }
-
-    const dayInvalidCounts = dailyInvalidCounts[mediaId] || {};
-    for (const [day, count] of Object.entries(dayInvalidCounts)) {
-      if (!existing[day]) existing[day] = { spend: '', db: '', revenue: '', invalidDb: '' };
-      existing[day].invalidDb = count;
     }
 
     await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);

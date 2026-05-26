@@ -1088,21 +1088,23 @@ function renderMediaTable(mediaId) {
   const media = MEDIA.find(m => m.id === mediaId);
   const days  = daysInMonth(curYear, curMonth);
   const data  = loadData(curYear, curMonth, mediaId);
-  let totalSpend = 0, totalDB = 0, totalRevenue = 0;
+  let totalSpend = 0, totalDB = 0, totalRevenue = 0, totalInvalidDB = 0;
   let rows = '';
 
   for (let d = 1; d <= days; d++) {
-    const row  = data[String(d)] || { spend:'', db:'', revenue:'' };
+    const row  = data[String(d)] || { spend:'', db:'', revenue:'', invalidDb:'' };
     const dow  = getDayOfWeek(curYear, curMonth, d);
     const isWE = dow === 0 || dow === 6;
     const spendV   = row.spend   !== '' ? Number(row.spend)   : null;
     const dbV      = row.db      !== '' ? Number(row.db)      : null;
     const revenueV = row.revenue !== '' ? Number(row.revenue) : null;
+    const invalidDbV = row.invalidDb !== '' && row.invalidDb != null ? Number(row.invalidDb) : 0;
     const cpa  = calcCPA(spendV, dbV);
     const roas = calcROAS(revenueV, spendV);
     if (spendV)   totalSpend   += spendV;
     if (dbV)      totalDB      += dbV;
     if (revenueV) totalRevenue += revenueV;
+    if (invalidDbV) totalInvalidDB += invalidDbV;
     const dateStyle = isWE ? `color:${dow===0?'#FF453A':'#4F8EF7'};` : '';
     rows += `
       <tr>
@@ -1111,7 +1113,10 @@ function renderMediaTable(mediaId) {
           <span class="day" style="${dateStyle}">${DAYS_KO[dow]}</span>
         </td>
         <td><input class="cell-input" type="text" inputmode="numeric" placeholder="0" value="${row.spend}" data-day="${d}" data-field="spend" data-media="${mediaId}" onchange="onCellChange(this)" onfocus="this.select()" ${isUnlocked?'':'disabled'}></td>
-        <td><input class="cell-input" type="text" inputmode="numeric" placeholder="0" value="${row.db}" data-day="${d}" data-field="db" data-media="${mediaId}" onchange="onCellChange(this)" onfocus="this.select()" ${isUnlocked?'':'disabled'}></td>
+        <td style="position:relative;">
+          <input class="cell-input" type="text" inputmode="numeric" placeholder="0" value="${row.db}" data-day="${d}" data-field="db" data-media="${mediaId}" onchange="onCellChange(this)" onfocus="this.select()" style="${invalidDbV > 0 ? 'padding-right:48px;' : ''}" ${isUnlocked?'':'disabled'}>
+          ${invalidDbV > 0 ? `<span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--red);font-family:var(--font-mono);font-size:12px;font-weight:500;pointer-events:none;">(${invalidDbV})</span>` : ''}
+        </td>
         <td class="td-cpa ${cpa?'filled':''}" id="cpa_${mediaId}_${d}">${cpa ? fmtMoney(cpa)+' ₩' : '-'}</td>
         <td><input class="cell-input" type="text" inputmode="numeric" placeholder="0" value="${row.revenue}" data-day="${d}" data-field="revenue" data-media="${mediaId}" onchange="onCellChange(this)" onfocus="this.select()" ${isUnlocked?'':'disabled'}></td>
         <td class="td-roas ${roas?(Number(roas)>=100?'good':'bad'):''}" id="roas_${mediaId}_${d}">${roas ? fmtMoney(roas)+'%' : '-'}</td>
@@ -1141,7 +1146,7 @@ function renderMediaTable(mediaId) {
         <tfoot><tr>
           <td>합계</td>
           <td id="foot_spend_${mediaId}">${totalSpend ? fmtMoney(totalSpend) : '-'}</td>
-          <td id="foot_db_${mediaId}">${totalDB ? fmtMoney(totalDB) : '-'}</td>
+          <td id="foot_db_${mediaId}">${totalDB ? fmtMoney(totalDB) : '-'}${totalInvalidDB > 0 ? ` <span style="color:var(--red);">(${fmtMoney(totalInvalidDB)})</span>` : ''}</td>
           <td class="total-cpa" id="foot_cpa_${mediaId}">${totalCPA ? fmtMoney(totalCPA)+' ₩' : '-'}</td>
           <td id="foot_revenue_${mediaId}">${totalRevenue ? fmtMoney(totalRevenue) : '-'}</td>
           <td class="total-cpa" id="foot_roas_${mediaId}">${totalROAS ? fmtMoney(totalROAS)+'%' : '-'}</td>
@@ -1178,19 +1183,26 @@ function onCellChange(input) {
 function recalcFooter(mediaId) {
   const data = loadData(curYear, curMonth, mediaId);
   const days = daysInMonth(curYear, curMonth);
-  let s=0, d=0, r=0;
+  let s=0, d=0, r=0, inv=0;
   for (let i=1; i<=days; i++) {
     const row = data[String(i)] || {};
     if (row.spend   !== '' && row.spend   != null) s += Number(row.spend);
     if (row.db      !== '' && row.db      != null) d += Number(row.db);
     if (row.revenue !== '' && row.revenue != null) r += Number(row.revenue);
+    if (row.invalidDb !== '' && row.invalidDb != null) inv += Number(row.invalidDb);
   }
   const cpa = calcCPA(s,d), roas = calcROAS(r,s);
   const get = id => document.getElementById(id);
-  if (get(`foot_spend_${mediaId}`))   get(`foot_spend_${mediaId}`).textContent   = s    ? fmtMoney(s)    : '-';
-  if (get(`foot_db_${mediaId}`))      get(`foot_db_${mediaId}`).textContent      = d    ? fmtMoney(d)    : '-';
-  if (get(`foot_cpa_${mediaId}`))     get(`foot_cpa_${mediaId}`).textContent     = cpa  ? fmtMoney(cpa)+' ₩' : '-';
-  if (get(`foot_roas_${mediaId}`))    get(`foot_roas_${mediaId}`).textContent    = roas ? fmtMoney(roas)+'%' : '-';
+  if (get(`foot_spend_${mediaId}`)) get(`foot_spend_${mediaId}`).textContent = s ? fmtMoney(s) : '-';
+  if (get(`foot_db_${mediaId}`)) {
+    if (inv > 0) {
+      get(`foot_db_${mediaId}`).innerHTML = `${d ? fmtMoney(d) : '-'} <span style="color:var(--red);">(${fmtMoney(inv)})</span>`;
+    } else {
+      get(`foot_db_${mediaId}`).textContent = d ? fmtMoney(d) : '-';
+    }
+  }
+  if (get(`foot_cpa_${mediaId}`)) get(`foot_cpa_${mediaId}`).textContent = cpa ? fmtMoney(cpa)+' ₩' : '-';
+  if (get(`foot_roas_${mediaId}`)) get(`foot_roas_${mediaId}`).textContent = roas ? fmtMoney(roas)+'%' : '-';
 }
 
 /* ══════════════════════════════════════════════
@@ -1217,25 +1229,26 @@ function renderDashboard() {
   }
 
   const days = daysInMonth(curYear, curMonth);
-  let grandSpend=0, grandDB=0, grandRevenue=0;
+  let grandSpend=0, grandDB=0, grandRevenue=0, grandInvalidDB=0;
   const summaries = MEDIA.map(m => {
     const data = loadData(curYear, curMonth, m.id);
-    let spend=0, db=0, revenue=0;
+    let spend=0, db=0, revenue=0, invalidDb=0;
     for (let d=1; d<=days; d++) {
       const r = data[String(d)] || {};
       if (r.spend   !== '' && r.spend   != null) spend   += Number(r.spend);
       if (r.db      !== '' && r.db      != null) db      += Number(r.db);
       if (r.revenue !== '' && r.revenue != null) revenue += Number(r.revenue);
+      if (r.invalidDb !== '' && r.invalidDb != null) invalidDb += Number(r.invalidDb);
     }
-    grandSpend += spend; grandDB += db; grandRevenue += revenue;
-    return { ...m, spend, db, revenue, cpa: calcCPA(spend,db), roas: calcROAS(revenue,spend) };
+    grandSpend += spend; grandDB += db; grandRevenue += revenue; grandInvalidDB += invalidDb;
+    return { ...m, spend, db, revenue, invalidDb, cpa: calcCPA(spend,db), roas: calcROAS(revenue,spend) };
   });
   const grandCPA  = calcCPA(grandSpend, grandDB);
   const grandROAS = calcROAS(grandRevenue, grandSpend);
 
   const kpiHtml = `<div class="dash-grid">
     <div class="kpi-card"><div class="kpi-label">총 소진 광고비</div><div class="kpi-value">${grandSpend ? fmtMoney(grandSpend) : '0'}</div><div class="kpi-sub">₩ · ${curYear}.${String(curMonth).padStart(2,'0')}</div></div>
-    <div class="kpi-card"><div class="kpi-label">총 유입 DB</div><div class="kpi-value">${grandDB ? fmtMoney(grandDB) : '0'}</div><div class="kpi-sub">건 · ${curYear}.${String(curMonth).padStart(2,'0')}</div></div>
+    <div class="kpi-card"><div class="kpi-label">총 유입 DB</div><div class="kpi-value">${grandDB ? fmtMoney(grandDB) : '0'}${grandInvalidDB > 0 ? `<span style="color:var(--red);font-size:18px;margin-left:8px;">(${fmtMoney(grandInvalidDB)})</span>` : ''}</div><div class="kpi-sub">건 · ${curYear}.${String(curMonth).padStart(2,'0')}</div></div>
     <div class="kpi-card"><div class="kpi-label">평균 DB 단가</div><div class="kpi-value" style="color:var(--accent)">${grandCPA ? fmtMoney(grandCPA) : '-'}</div><div class="kpi-sub">₩ / 건</div></div>
     <div class="kpi-card"><div class="kpi-label">총 매출</div><div class="kpi-value">${grandRevenue ? fmtMoney(grandRevenue) : '0'}</div><div class="kpi-sub">₩ · ${curYear}.${String(curMonth).padStart(2,'0')}</div></div>
     <div class="kpi-card"><div class="kpi-label">전체 ROAS</div><div class="kpi-value" style="color:${grandROAS&&Number(grandROAS)>=100?'var(--accent)':'var(--red)'}">${grandROAS ? fmtMoney(grandROAS)+'%' : '-'}</div><div class="kpi-sub">매출 ÷ 광고비</div></div>
@@ -1246,7 +1259,7 @@ function renderDashboard() {
     <tr>
       <td><span class="media-badge" style="background:${s.color}22;color:${s.color}"><span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.name}</span></td>
       <td>${s.spend   ? fmtMoney(s.spend)   : '-'}</td>
-      <td>${s.db      ? fmtMoney(s.db)      : '-'}</td>
+      <td>${s.db      ? fmtMoney(s.db)      : '-'}${s.invalidDb > 0 ? ` <span style="color:var(--red);">(${fmtMoney(s.invalidDb)})</span>` : ''}</td>
       <td style="color:${s.cpa?'var(--green)':'var(--text-mute)'}">${s.cpa ? fmtMoney(s.cpa)+' ₩' : '-'}</td>
       <td>${s.revenue ? fmtMoney(s.revenue) : '-'}</td>
       <td style="color:${s.roas?(Number(s.roas)>=100?'var(--accent)':'var(--red)'):'var(--text-mute)'}">${s.roas ? fmtMoney(s.roas)+'%' : '-'}</td>
@@ -1281,7 +1294,7 @@ function renderDashboard() {
         <tfoot><tr>
           <td>전체 합계</td>
           <td>${grandSpend   ? fmtMoney(grandSpend)   : '-'}</td>
-          <td>${grandDB      ? fmtMoney(grandDB)      : '-'}</td>
+          <td>${grandDB      ? fmtMoney(grandDB)      : '-'}${grandInvalidDB > 0 ? ` <span style="color:var(--red);">(${fmtMoney(grandInvalidDB)})</span>` : ''}</td>
           <td>${grandCPA     ? fmtMoney(grandCPA)+' ₩' : '-'}</td>
           <td>${grandRevenue ? fmtMoney(grandRevenue) : '-'}</td>
           <td>${grandROAS    ? fmtMoney(grandROAS)+'%' : '-'}</td>

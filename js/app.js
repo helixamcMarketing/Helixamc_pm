@@ -30,6 +30,7 @@ const MENU = [
     icon: '📋',
     items: [
       { id: 'leads_list', label: '신청 목록', dot: null },
+      { id: 'leads_utm_labels', label: '유입 소재 관리', dot: null },
     ]
   },
   {
@@ -104,6 +105,164 @@ async function fetchAllData() {
       });
     });
   });
+}
+
+let utmContentLabels = {};
+
+function getUtmContentLabel(rawValue) {
+  if (!rawValue) return '';
+  return utmContentLabels[rawValue] || rawValue;
+}
+
+function initUtmLabels() {
+  db.ref('utm_content_labels').on('value', (snap) => {
+    utmContentLabels = snap.val() || {};
+    if (curPageId === 'leads_utm_labels') {
+      renderUtmLabels();
+    }
+  });
+}
+
+async function renderUtmLabels() {
+  const snap = await db.ref('leads').once('value');
+  const val = snap.val() || {};
+  const usageCounts = {};
+  Object.values(val).forEach(lead => {
+    const uc = lead.utm_content;
+    if (uc && uc.trim && uc.trim()) {
+      usageCounts[uc] = (usageCounts[uc] || 0) + 1;
+    }
+  });
+
+  const mappedKeys = Object.keys(utmContentLabels).sort();
+  const allUsedKeys = Object.keys(usageCounts);
+  const unmappedKeys = allUsedKeys.filter(k => !utmContentLabels.hasOwnProperty(k)).sort();
+
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const mappedRows = mappedKeys.length === 0
+    ? `<tr><td colspan="4" style="text-align:center;color:var(--text-mute);padding:30px;font-size:13px;">매핑된 소재가 없습니다. 우측 상단의 "신규 추가" 버튼으로 시작하세요.</td></tr>`
+    : mappedKeys.map(key => {
+        const label = utmContentLabels[key];
+        const usage = usageCounts[key] || 0;
+        return `
+          <tr>
+            <td style="text-align:left;font-family:var(--font-mono);font-size:13px;color:var(--text-sub);padding:12px 16px;">${escapeHtml(key)}</td>
+            <td style="text-align:left;font-size:13px;font-weight:500;padding:12px 16px;">${escapeHtml(label)}</td>
+            <td style="text-align:left;font-family:var(--font-mono);font-size:12px;color:var(--text-mute);padding:12px 16px;">${usage}건</td>
+            <td style="text-align:left;padding:12px 16px;">
+              <button onclick="openUtmLabelModal('${escapeHtml(key).replace(/'/g, "\\'")}', 'edit')" style="padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;margin-right:6px;">수정</button>
+              <button onclick="deleteUtmLabel('${escapeHtml(key).replace(/'/g, "\\'")}')" style="padding:5px 12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:12px;cursor:pointer;">삭제</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+  const unmappedRows = unmappedKeys.length === 0
+    ? ''
+    : unmappedKeys.map(key => {
+        const usage = usageCounts[key];
+        return `
+          <tr style="background:rgba(255,170,0,0.06);">
+            <td style="text-align:left;font-family:var(--font-mono);font-size:13px;color:#FFAA00;padding:12px 16px;font-weight:600;">⚠ ${escapeHtml(key)}</td>
+            <td style="text-align:left;font-family:var(--font-mono);font-size:12px;color:var(--text-mute);padding:12px 16px;">${usage}건</td>
+            <td style="text-align:left;padding:12px 16px;">
+              <button onclick="openUtmLabelModal('${escapeHtml(key).replace(/'/g, "\\'")}', 'add')" style="padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">매핑 추가</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">유입 소재 관리 <span class="section-badge">${mappedKeys.length}개 매핑</span></div>
+      <button onclick="openUtmLabelModal('', 'add')" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ 신규 추가</button>
+    </div>
+
+    ${unmappedKeys.length > 0 ? `
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13px;color:#FFAA00;font-weight:600;margin-bottom:10px;">⚠ 매핑이 필요한 신규 소재 (${unmappedKeys.length}개)</div>
+      <div class="table-wrap">
+        <table style="width:100%;">
+          <thead><tr>
+            <th style="text-align:left;padding:10px 16px;">UTM 값</th>
+            <th style="text-align:left;padding:10px 16px;">사용 건수</th>
+            <th style="text-align:left;padding:10px 16px;width:140px;">작업</th>
+          </tr></thead>
+          <tbody>${unmappedRows}</tbody>
+        </table>
+      </div>
+    </div>
+    ` : ''}
+
+    <div>
+      <div style="font-size:13px;color:var(--text-sub);font-weight:600;margin-bottom:10px;">매핑 완료된 소재</div>
+      <div class="table-wrap">
+        <table style="width:100%;">
+          <thead><tr>
+            <th style="text-align:left;padding:10px 16px;">UTM 값</th>
+            <th style="text-align:left;padding:10px 16px;">소재명</th>
+            <th style="text-align:left;padding:10px 16px;">사용 건수</th>
+            <th style="text-align:left;padding:10px 16px;width:200px;">작업</th>
+          </tr></thead>
+          <tbody>${mappedRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function openUtmLabelModal(rawValue, mode) {
+  if (!isUnlocked) { openModal(); return; }
+  const currentLabel = mode === 'edit' ? (utmContentLabels[rawValue] || '') : '';
+  const title = mode === 'edit' ? '📝 소재명 수정' : (rawValue ? '📝 소재명 추가' : '📝 신규 매핑 추가');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'utmLabelModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;margin-bottom:20px;">${title}</div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">UTM 값 (utm_content)</div>
+        <input type="text" id="utmRawInput" value="${rawValue || ''}" ${rawValue ? 'disabled' : ''} placeholder="예: wd_3"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:var(--font-mono);font-size:14px;color:var(--text);outline:none;${rawValue ? 'opacity:0.6;' : ''}">
+      </div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">소재명</div>
+        <input type="text" id="utmLabelInput" value="${currentLabel}" placeholder="예: 화이트독 3번 소재"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeUtmLabelModal()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">취소</button>
+        <button onclick="saveUtmLabel()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">저장</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeUtmLabelModal(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => {
+    if (rawValue) document.getElementById('utmLabelInput')?.focus();
+    else document.getElementById('utmRawInput')?.focus();
+  }, 100);
+}
+
+function closeUtmLabelModal() {
+  const el = document.getElementById('utmLabelModalOverlay');
+  if (el) el.remove();
+}
+
+async function saveUtmLabel() {
+  const raw = document.getElementById('utmRawInput')?.value.trim();
+  const label = document.getElementById('utmLabelInput')?.value.trim();
+  if (!raw) { alert('UTM 값을 입력해 주세요.'); return; }
+  if (!label) { alert('소재명을 입력해 주세요.'); return; }
+  if (/[.#$\[\]\/]/.test(raw)) { alert('UTM 값에 . # $ [ ] / 문자는 사용할 수 없습니다.'); return; }
+  await db.ref(`utm_content_labels/${raw}`).set(label);
+  closeUtmLabelModal();
+}
+
+async function deleteUtmLabel(rawValue) {
+  if (!isUnlocked) { openModal(); return; }
+  if (!confirm(`"${rawValue}" 매핑을 삭제하시겠습니까?`)) return;
+  await db.ref(`utm_content_labels/${rawValue}`).remove();
 }
 
 /* ══════════════════════════════════════════════
@@ -258,6 +417,7 @@ function render() {
   if (curPageId === 'adlog_dashboard') renderDashboard();
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
   else if (curPageId === 'leads_list') renderLeads();
+  else if (curPageId === 'leads_utm_labels') renderUtmLabels();
   else if (curPageId === 'sales_dashboard') renderSalesDashboard();
   else if (curPageId === 'sales_monthly') renderSalesMonthly();
   else renderComingSoon();
@@ -419,7 +579,8 @@ function renderLeadsTable(entries) {
     const petTypeText = petTypeLabel[v.petType] || v.petType || '-';
     const petBreedText = v.petBreed || '-';
     const petAgeText = v.petAge || '-';
-    const utmContentText = v.utm_content || '-';
+    const utmContentRaw = v.utm_content || '';
+    const utmContentText = utmContentRaw ? getUtmContentLabel(utmContentRaw) : '-';
     const inquiryText = v.inquiry ? escapeHtml(v.inquiry) : '<span style="color:var(--text-mute);">문의 내용이 없습니다</span>';
 
     return `
@@ -460,7 +621,7 @@ function renderLeadsTable(entries) {
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">유입 소재</div>
-              <div style="font-size:13px;color:var(--text);">${escapeHtml(utmContentText)}</div>
+              <div style="font-size:13px;color:var(--text);">${escapeHtml(utmContentText)}${utmContentRaw && utmContentRaw !== utmContentText ? ` <span style="color:var(--text-mute);font-size:11px;font-family:var(--font-mono);">(${escapeHtml(utmContentRaw)})</span>` : ''}</div>
             </div>
             <div style="grid-column:1 / -1;">
               <div style="font-size:10px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;">문의 내용</div>
@@ -541,7 +702,7 @@ function downloadLeadsCsv() {
   const entries = window._leadsDisplayedEntries || [];
   if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-  const header = '신청일시,매체,소재,이름,연락처,불량여부,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
+  const header = '신청일시,매체,소재(raw),소재명,이름,연락처,불량여부,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
   const fmt = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -557,6 +718,7 @@ function downloadLeadsCsv() {
       esc(date),
       esc(v.media || ''),
       esc(v.utm_content || ''),
+      esc(v.utm_content ? getUtmContentLabel(v.utm_content) : ''),
       esc(v.name),
       esc(v.phone),
       esc(v.invalid === true ? '불량' : '정상'),
@@ -1604,7 +1766,8 @@ db.ref('leads').on('value', async (snap) => {
 buildSidebar();
 updateBreadcrumb();
 updateMonthLabel();
-render();
+showLoading();
+initUtmLabels();
 (async () => {
   await fetchAllData();
   render();

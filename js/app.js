@@ -514,7 +514,7 @@ function renderLeadsTable(entries) {
   });
 
   const duplicateCount = Object.values(countMap).filter(c => c > 1).length;
-  const invalidLeadCount = entries.filter(([, vv]) => vv.invalid === true).length;
+  const invalidLeadCount = entries.filter(([, vv]) => getLeadStatus(vv) === 'invalid').length;
   const validLeadCount = entries.length - invalidLeadCount;
 
   let badgeHtml = `${validLeadCount}건`;
@@ -547,25 +547,31 @@ function renderLeadsTable(entries) {
       ? new Date(v.submittedAt).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
       : '-';
     const total = countMap[v.phone];
-    const badge = total > 1
+    const dupBadge = total > 1
       ? `<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:var(--red);color:#fff;border-radius:4px;font-size:10px;font-weight:700;vertical-align:middle;">${total}회</span>`
       : '';
     const mediaColor = mediaColors[v.media] || '#8A96A8';
-    const isInvalid = v.invalid === true;
+    const statusValue = getLeadStatus(v);
+    const statusOpt = getStatusOption(statusValue);
+    const isInvalid = statusValue === 'invalid';
     const mediaBadge = v.media
       ? `<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${mediaColor}22;color:${mediaColor};${isInvalid ? 'text-decoration:line-through;' : ''}">${v.media}</span>`
       : '<span style="color:var(--text-mute);font-size:11px;">-</span>';
     const reserved = !!v.reserved;
     const reservedAt = v.reservedAt || '';
-    const rowStyle = isInvalid
-      ? 'border-left:3px solid var(--red);background:rgba(255,69,58,0.04);opacity:0.5;'
-      : (reserved ? 'border-left:3px solid var(--accent);background:rgba(0,122,255,0.04);' : '');
+
+    const leftBorder = statusValue !== 'lead' ? `border-left:3px solid ${statusOpt.color};` : '';
+    const rightBorder = reserved ? `border-right:3px solid var(--accent);` : '';
+    const rowBg = isInvalid ? 'background:rgba(239,68,68,0.04);opacity:0.5;'
+                 : (statusValue === 'rejected' ? 'background:rgba(185,28,28,0.03);'
+                 : (reserved ? 'background:rgba(0,122,255,0.04);' : ''));
+    const rowStyle = leftBorder + rightBorder + rowBg;
+
+    const statusBtnStyle = `padding:5px 12px;background:${statusOpt.bg};color:${statusOpt.color};border:1px solid ${statusOpt.color};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;`;
+
     const btnStyle = reserved
       ? 'padding:5px 12px;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
       : 'padding:5px 12px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:12px;cursor:pointer;';
-    const invalidBtnStyle = isInvalid
-      ? 'padding:5px 12px;background:var(--red);color:#fff;border:1px solid var(--red);border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;'
-      : 'padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:12px;cursor:pointer;';
 
     const reservedAtDisplay = reservedAt
       ? `<span style="color:var(--text);font-size:12px;font-family:var(--font-mono);">${formatReservedAt(reservedAt)}</span>`
@@ -588,9 +594,9 @@ function renderLeadsTable(entries) {
         <td style="width:160px;text-align:left;font-size:12px;color:var(--text-sub);">${date}</td>
         <td style="width:80px;text-align:left;">${mediaBadge}</td>
         <td style="width:90px;text-align:left;">
-          <button onclick="toggleInvalid('${key}')" style="${invalidBtnStyle}">${isInvalid ? '불량' : '정상'}</button>
+          <button onclick="openStatusModal('${key}')" style="${statusBtnStyle}">${statusOpt.label}</button>
         </td>
-        <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${badge}</td>
+        <td style="width:100px;text-align:left;font-weight:600;">${v.name || '-'}${dupBadge}</td>
         <td style="width:140px;text-align:left;font-family:var(--font-mono);">${v.phone || '-'}</td>
         <td style="text-align:left;cursor:pointer;" onclick="openMemoModal('${key}')" title="클릭하여 메모 작성/수정">${memoCell}</td>
         <td style="width:100px;text-align:left;">
@@ -637,7 +643,7 @@ function renderLeadsTable(entries) {
       <thead><tr>
         <th style="text-align:left;width:160px;">신청 일시</th>
         <th style="text-align:left;width:80px;">매체</th>
-        <th style="text-align:left;width:90px;">불량</th>
+        <th style="text-align:left;width:90px;">DB 상태</th>
         <th style="text-align:left;width:100px;">이름</th>
         <th style="text-align:left;width:140px;">연락처</th>
         <th style="text-align:left;">상담 메모</th>
@@ -702,7 +708,7 @@ function downloadLeadsCsv() {
   const entries = window._leadsDisplayedEntries || [];
   if (entries.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
-  const header = '신청일시,매체,소재(raw),소재명,이름,연락처,불량여부,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
+  const header = '신청일시,매체,소재(raw),소재명,이름,연락처,DB상태,반려동물,세부종,나이,문의내용,예약상태,예약일시,상담메모,메모수정일시';
   const fmt = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -721,7 +727,7 @@ function downloadLeadsCsv() {
       esc(v.utm_content ? getUtmContentLabel(v.utm_content) : ''),
       esc(v.name),
       esc(v.phone),
-      esc(v.invalid === true ? '불량' : '정상'),
+      esc(getStatusOption(getLeadStatus(v)).label),
       esc(petTypeLabel[v.petType] || v.petType || ''),
       esc(v.petBreed || ''),
       esc(v.petAge || ''),
@@ -833,15 +839,77 @@ async function deleteLead(key) {
   }
 }
 
-async function toggleInvalid(key) {
+const STATUS_OPTIONS = [
+  { value: 'lead',      label: '유입', color: '#9ca3af', bg: 'rgba(156,163,175,0.15)' },
+  { value: 'contacted', label: '연결', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+  { value: 'absent',    label: '부재', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+  { value: 'rejected',  label: '거절', color: '#b91c1c', bg: 'rgba(185,28,28,0.15)' },
+  { value: 'invalid',   label: '불량', color: '#ef4444', bg: 'rgba(239,68,68,0.2)'  }
+];
+
+function getLeadStatus(lead) {
+  if (lead && lead.status && STATUS_OPTIONS.find(s => s.value === lead.status)) {
+    return lead.status;
+  }
+  if (lead && lead.invalid === true) return 'invalid';
+  return 'lead';
+}
+
+function getStatusOption(value) {
+  return STATUS_OPTIONS.find(s => s.value === value) || STATUS_OPTIONS[0];
+}
+
+function openStatusModal(key) {
   if (!isUnlocked) { openModal(); return; }
-  const snap = await db.ref(`leads/${key}`).once('value');
-  const v = snap.val() || {};
-  const newInvalid = !(v.invalid === true);
-  await db.ref(`leads/${key}`).update({
-    invalid: newInvalid,
-    invalidAt: newInvalid ? new Date().toISOString() : ''
+  db.ref(`leads/${key}`).once('value').then(snap => {
+    const v = snap.val() || {};
+    const currentStatus = getLeadStatus(v);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'statusModalOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+
+    const buttons = STATUS_OPTIONS.map(s => {
+      const isActive = s.value === currentStatus;
+      return `
+        <button onclick="changeStatus('${key}','${s.value}')"
+          style="padding:14px 20px;border-radius:10px;border:1.5px solid ${isActive ? s.color : 'var(--border)'};background:${isActive ? s.bg : 'transparent'};color:${isActive ? s.color : 'var(--text)'};font-size:14px;font-weight:${isActive ? '700' : '500'};cursor:pointer;display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;transition:all 0.15s;">
+          <span>${s.label}</span>
+          ${isActive ? '<span style="font-size:11px;">● 현재</span>' : ''}
+        </button>`;
+    }).join('');
+
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:28px;width:100%;max-width:340px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+        <div style="font-size:15px;font-weight:700;letter-spacing:-0.3px;margin-bottom:18px;">DB 상태 변경</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">${buttons}</div>
+        <button onclick="closeStatusModal()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">취소</button>
+      </div>`;
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeStatusModal(); });
+    document.body.appendChild(overlay);
   });
+}
+
+function closeStatusModal() {
+  const el = document.getElementById('statusModalOverlay');
+  if (el) el.remove();
+}
+
+async function changeStatus(key, newStatus) {
+  if (!isUnlocked) { openModal(); return; }
+  const updates = {
+    status: newStatus,
+    statusChangedAt: new Date().toISOString()
+  };
+  if (newStatus === 'invalid') {
+    updates.invalid = true;
+    updates.invalidAt = new Date().toISOString();
+  } else {
+    updates.invalid = null;
+    updates.invalidAt = null;
+  }
+  await db.ref(`leads/${key}`).update(updates);
+  closeStatusModal();
 }
 
 function showInquiry(text) {
@@ -1193,7 +1261,8 @@ async function autoFillMediaDB(entries, year, month) {
     const mediaId = mediaMap[v.media];
     if (!mediaId) return;
     const day = String(d.getDate());
-    if (v.invalid === true) {
+    const status = getLeadStatus(v);
+    if (status === 'invalid') {
       if (!dailyInvalidCounts[mediaId]) dailyInvalidCounts[mediaId] = {};
       dailyInvalidCounts[mediaId][day] = (dailyInvalidCounts[mediaId][day] || 0) + 1;
     } else {

@@ -123,6 +123,59 @@ function initUtmLabels() {
   });
 }
 
+function initLeadsNotification() {
+  if (!('Notification' in window)) {
+    console.log('[알림] 브라우저가 알림 기능을 지원하지 않습니다.');
+    return;
+  }
+
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log('[알림] 권한 허용됨. 신규 DB 유입 시 알림이 표시됩니다.');
+      } else {
+        console.log('[알림] 권한 거부됨. 브라우저 설정에서 다시 허용할 수 있습니다.');
+      }
+    });
+  } else if (Notification.permission === 'granted') {
+    console.log('[알림] 활성화됨. 신규 DB 유입 시 알림이 표시됩니다.');
+  } else {
+    console.log('[알림] 권한이 차단되어 있습니다. 브라우저 주소창 좌측 자물쇠 아이콘에서 알림을 허용해 주세요.');
+  }
+
+  const startTime = Date.now();
+
+  db.ref('leads').on('child_added', (snap) => {
+    const v = snap.val() || {};
+    const submittedAt = v.submittedAt ? new Date(v.submittedAt).getTime() : 0;
+
+    if (submittedAt < startTime) return;
+
+    const now = new Date();
+    const day = now.getDay();
+    const hour = now.getHours();
+    if (day === 0 || day === 6) return;
+    if (hour < 9 || hour >= 18) return;
+
+    if (Notification.permission !== 'granted') return;
+
+    const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const name = v.name || '이름 없음';
+    const media = v.media || '직접유입';
+
+    const notif = new Notification('🐾 신규 신청 유입', {
+      body: `${name} · ${media} · ${time}`,
+      tag: snap.key,
+      requireInteraction: false
+    });
+
+    notif.onclick = () => {
+      window.focus();
+      notif.close();
+    };
+  });
+}
+
 async function renderUtmLabels() {
   const snap = await db.ref('leads').once('value');
   const val = snap.val() || {};
@@ -1837,6 +1890,7 @@ updateBreadcrumb();
 updateMonthLabel();
 showLoading();
 initUtmLabels();
+initLeadsNotification();
 (async () => {
   await fetchAllData();
   render();

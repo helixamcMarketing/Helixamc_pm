@@ -22,6 +22,7 @@ const MENU = [
       { id: 'adlog_naver',    label: '네이버',   dot: '#03C75A' },
       { id: 'adlog_kakao',    label: '카카오',   dot: '#FAE100' },
       { id: 'adlog_tiktok',   label: '틱톡',     dot: '#7B2FBE' },
+      { id: 'adlog_homepage', label: '홈페이지', dot: '#00C8A8' },
     ]
   },
   {

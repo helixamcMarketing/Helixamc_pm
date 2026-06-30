@@ -51,6 +51,7 @@ const MEDIA = [
   { id:'naver',  name:'네이버', color:'#03C75A' },
   { id:'kakao',  name:'카카오', color:'#FAE100' },
   { id:'tiktok', name:'틱톡',   color:'#7B2FBE' },
+  { id: 'homepage', name: '홈페이지', color: '#00C8A8' }
 ];
 const DAYS_KO = ['일','월','화','수','목','금','토'];
 
@@ -578,7 +579,8 @@ function renderLeadsTable(entries) {
   const petTypeLabel = { dog: '강아지', cat: '고양이', other: '기타', '': '미선택' };
   const mediaColors = {
     '메타': '#1877F2', '구글': '#EA4335', '당근': '#FF6F0F',
-    '카카오': '#FAE100', '틱톡': '#7B2FBE', '네이버': '#03C75A', '직접유입': '#8A96A8'
+    '카카오': '#FAE100', '틱톡': '#7B2FBE', '네이버': '#03C75A', '직접유입': '#8A96A8',
+    '홈페이지': '#00C8A8'
   };
 
   const formatReservedAt = (iso) => {
@@ -1302,7 +1304,8 @@ async function renderSalesMonthly() {
 async function autoFillMediaDB(entries, year, month) {
   const mediaMap = {
     '메타': 'meta', '구글': 'google', '당근': 'daangn',
-    '카카오': 'kakao', '틱톡': 'tiktok', '네이버': 'naver'
+    '카카오': 'kakao', '틱톡': 'tiktok', '네이버': 'naver',
+    '홈페이지': 'homepage'
   };
 
   const dailyCounts = {};

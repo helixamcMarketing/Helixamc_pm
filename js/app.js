@@ -43,6 +43,14 @@ const MENU = [
       { id: 'sales_monthly',   label: '월별 상세', dot: null },
     ]
   },
+  {
+    id: 'content',
+    label: '컨텐츠 관리',
+    icon: '📝',
+    items: [
+      { id: 'blog_manage', label: '블로그 관리', dot: null }
+    ]
+  }
 ];
 
 const MEDIA = [
@@ -304,6 +312,396 @@ function closeUtmLabelModal() {
   if (el) el.remove();
 }
 
+const BLOG_COLORS = ['#10b981','#f59e0b','#6366f1','#ec4899','#14b8a6','#f97316','#06b6d4','#a855f7'];
+let blogsList = {};
+let blogPostsCache = [];
+let blogFetchLoading = false;
+
+function encodeUrlKey(url) {
+  return url.replace(/[.#$\[\]\/]/g, '_');
+}
+
+function extractNaverBlogId(input) {
+  if (!input) return '';
+  const trimmed = input.trim();
+  const m = trimmed.match(/blog\.naver\.com\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  return trimmed.replace(/^@/, '').split('/')[0];
+}
+
+async function fetchBlogRss(blogId) {
+  const rssUrl = `https://rss.blog.naver.com/${blogId}.xml`;
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error('RSS fetch failed');
+  const data = await res.json();
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(data.contents, 'text/xml');
+  const items = Array.from(xml.querySelectorAll('item'));
+  return items.slice(0, 10).map(item => {
+    const title = item.querySelector('title')?.textContent || '';
+    const link = item.querySelector('link')?.textContent || '';
+    const pubDate = item.querySelector('pubDate')?.textContent || '';
+    return { title, link, pubDate };
+  });
+}
+
+function initBlogsListener() {
+  db.ref('blogs').on('value', (snap) => {
+    blogsList = snap.val() || {};
+    if (curPageId === 'blog_manage') {
+      renderBlogManage();
+    }
+  });
+}
+
+async function renderBlogManage() {
+  const blogIds = Object.keys(blogsList);
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-title">블로그 관리 <span class="section-badge">${blogIds.length}개 등록</span></div>
+      <button onclick="openBlogRegisterModal()" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ 블로그 등록</button>
+    </div>
+
+    <div id="blogListArea" style="margin-bottom:24px;">
+      ${blogIds.length === 0
+        ? `<div style="padding:40px;text-align:center;color:var(--text-mute);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">등록된 블로그가 없습니다. 우측 상단 "블로그 등록" 버튼으로 시작하세요.</div>`
+        : blogIds.map(id => {
+            const b = blogsList[id];
+            return `
+              <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:${b.color}22;color:${b.color};border:1px solid ${b.color}55;border-radius:20px;font-size:12px;font-weight:600;margin-right:8px;margin-bottom:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:${b.color};display:inline-block;"></span>
+                ${escapeHtml(b.name)}
+                <span style="color:var(--text-mute);font-weight:400;font-size:11px;">${b.purpose || ''}</span>
+                <button onclick="deleteBlog('${id}')" style="background:transparent;border:none;color:var(--text-mute);cursor:pointer;padding:0 0 0 4px;font-size:14px;">×</button>
+              </div>`;
+          }).join('')}
+    </div>
+
+    <div class="section-header" style="margin-bottom:12px;">
+      <div class="section-title" style="font-size:14px;color:var(--text-sub);">최근 발행 포스팅</div>
+      <button onclick="loadBlogPosts()" style="padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:12px;cursor:pointer;">↻ 새로고침</button>
+    </div>
+
+    <div id="blogPostsWrap">
+      ${blogIds.length === 0
+        ? ''
+        : `<div style="padding:30px;text-align:center;color:var(--text-mute);font-size:13px;">불러오는 중…</div>`}
+    </div>`;
+
+  if (blogIds.length > 0) {
+    loadBlogPosts();
+  }
+}
+
+async function loadBlogPosts() {
+  if (blogFetchLoading) return;
+  blogFetchLoading = true;
+
+  const wrap = document.getElementById('blogPostsWrap');
+  if (wrap) wrap.innerHTML = `<div style="padding:30px;text-align:center;color:var(--text-mute);font-size:13px;">불러오는 중…</div>`;
+
+  const blogIds = Object.keys(blogsList);
+  const allPosts = [];
+  const errors = [];
+
+  for (const id of blogIds) {
+    const b = blogsList[id];
+    try {
+      const posts = await fetchBlogRss(b.naverId);
+      posts.forEach(p => {
+        allPosts.push({
+          ...p,
+          blogId: id,
+          blogName: b.name,
+          blogPurpose: b.purpose || '',
+          blogColor: b.color
+        });
+      });
+    } catch (err) {
+      errors.push(b.name);
+      console.error(`[blog] ${b.name} RSS 로드 실패:`, err);
+    }
+  }
+
+  allPosts.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+
+  const metaSnap = await db.ref('blog_posts').once('value');
+  const metaMap = metaSnap.val() || {};
+
+  blogPostsCache = allPosts.map(p => {
+    const key = encodeUrlKey(p.link);
+    const meta = metaMap[key] || { keywords: [], memo: '' };
+    return { ...p, urlKey: key, keywords: meta.keywords || [], memo: meta.memo || '' };
+  });
+
+  renderBlogPostsTable(errors);
+  blogFetchLoading = false;
+}
+
+function renderBlogPostsTable(errors) {
+  const wrap = document.getElementById('blogPostsWrap');
+  if (!wrap) return;
+
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const formatDate = (iso) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '-';
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  };
+
+  const errorHtml = errors && errors.length > 0
+    ? `<div style="padding:10px 16px;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;color:#FFAA00;font-size:12px;margin-bottom:12px;">⚠ RSS 로드 실패: ${errors.map(escapeHtml).join(', ')}</div>`
+    : '';
+
+  if (blogPostsCache.length === 0) {
+    wrap.innerHTML = errorHtml + `<div style="padding:30px;text-align:center;color:var(--text-mute);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">발행된 포스팅이 없습니다.</div>`;
+    return;
+  }
+
+  const rows = blogPostsCache.map(p => {
+    const keywordChips = (p.keywords || []).map((k, idx) => `
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:11px;color:var(--text-sub);margin-right:4px;">
+        ${escapeHtml(k)}
+        <button onclick="removeKeyword('${p.urlKey}',${idx})" style="background:transparent;border:none;color:var(--text-mute);cursor:pointer;padding:0;font-size:12px;line-height:1;">×</button>
+      </span>`).join('');
+
+    const memo = p.memo || '';
+    const memoDisplay = memo
+      ? `<span style="color:var(--text-sub);font-size:12px;">${escapeHtml(memo.length > 20 ? memo.slice(0,20) + '…' : memo)}</span>`
+      : `<span style="padding:3px 10px;background:transparent;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;font-size:11px;">메모 작성</span>`;
+
+    return `
+      <tr>
+        <td style="width:100px;text-align:left;font-size:12px;color:var(--text-sub);">${formatDate(p.pubDate)}</td>
+        <td style="width:130px;text-align:left;">
+          <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${p.blogColor}22;color:${p.blogColor};">${escapeHtml(p.blogName)}</span>
+        </td>
+        <td style="width:70px;text-align:left;">
+          <span style="padding:2px 6px;border-radius:4px;font-size:11px;color:var(--text-sub);background:var(--surface2);">${escapeHtml(p.blogPurpose)}</span>
+        </td>
+        <td style="text-align:left;">
+          <a href="${escapeHtml(p.link)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;font-size:13px;">${escapeHtml(p.title)}</a>
+        </td>
+        <td style="text-align:left;cursor:pointer;" onclick="openKeywordModal('${p.urlKey}')" title="클릭하여 키워드 추가">
+          ${keywordChips}
+          <button style="padding:2px 8px;background:transparent;border:1px dashed var(--border);color:var(--text-mute);border-radius:12px;font-size:11px;cursor:pointer;">+ 키워드</button>
+        </td>
+        <td style="width:180px;text-align:left;cursor:pointer;" onclick="openMemoModalBlog('${p.urlKey}')">${memoDisplay}</td>
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = errorHtml + `
+    <div class="table-wrap">
+      <table style="width:100%;table-layout:fixed;">
+        <thead><tr>
+          <th style="text-align:left;width:100px;">발행일</th>
+          <th style="text-align:left;width:130px;">블로그</th>
+          <th style="text-align:left;width:70px;">용도</th>
+          <th style="text-align:left;">제목</th>
+          <th style="text-align:left;">키워드</th>
+          <th style="text-align:left;width:180px;">메모</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function openBlogRegisterModal() {
+  if (!isUnlocked) { openModal(); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'blogRegisterOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;margin-bottom:20px;">📝 블로그 등록</div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">블로그명</div>
+        <input type="text" id="blogNameInput" placeholder="예: 헬릭스 대표원장 블로그" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">용도</div>
+        <div style="display:flex;gap:8px;">
+          <label style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:13px;">
+            <input type="radio" name="blogPurpose" value="칼럼" style="margin-right:6px;">칼럼
+          </label>
+          <label style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:13px;">
+            <input type="radio" name="blogPurpose" value="정보" style="margin-right:6px;">정보
+          </label>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">네이버 블로그 URL 또는 ID</div>
+        <input type="text" id="blogNaverIdInput" placeholder="예: schelix 또는 blog.naver.com/schelix" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:var(--font-mono);font-size:14px;color:var(--text);outline:none;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeBlogRegisterModal()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">취소</button>
+        <button onclick="saveBlogRegister()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">등록</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeBlogRegisterModal(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('blogNameInput')?.focus(), 100);
+}
+
+function closeBlogRegisterModal() {
+  const el = document.getElementById('blogRegisterOverlay');
+  if (el) el.remove();
+}
+
+async function saveBlogRegister() {
+  const name = document.getElementById('blogNameInput')?.value.trim();
+  const purposeEl = document.querySelector('input[name="blogPurpose"]:checked');
+  const naverInput = document.getElementById('blogNaverIdInput')?.value.trim();
+  if (!name) { alert('블로그명을 입력해 주세요.'); return; }
+  if (!purposeEl) { alert('용도를 선택해 주세요.'); return; }
+  if (!naverInput) { alert('네이버 블로그 URL 또는 ID를 입력해 주세요.'); return; }
+  const naverId = extractNaverBlogId(naverInput);
+  if (!naverId) { alert('유효한 블로그 ID를 추출할 수 없습니다.'); return; }
+
+  const existingCount = Object.keys(blogsList).length;
+  const color = BLOG_COLORS[existingCount % BLOG_COLORS.length];
+  const blogId = 'blog_' + Date.now();
+
+  await db.ref(`blogs/${blogId}`).set({
+    name: name,
+    purpose: purposeEl.value,
+    naverId: naverId,
+    color: color,
+    registeredAt: new Date().toISOString()
+  });
+
+  closeBlogRegisterModal();
+}
+
+async function deleteBlog(blogId) {
+  if (!isUnlocked) { openModal(); return; }
+  const b = blogsList[blogId];
+  if (!b) return;
+  if (!confirm(`"${b.name}" 블로그를 삭제하시겠습니까?\n(포스팅별 키워드·메모는 유지됩니다.)`)) return;
+  await db.ref(`blogs/${blogId}`).remove();
+}
+
+function openKeywordModal(urlKey) {
+  if (!isUnlocked) { openModal(); return; }
+  const post = blogPostsCache.find(p => p.urlKey === urlKey);
+  if (!post) return;
+
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'keywordModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:15px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px;">🏷️ 키워드 추가</div>
+      <div style="font-size:12px;color:var(--text-mute);margin-bottom:16px;">${escapeHtml(post.title)}</div>
+      <div style="margin-bottom:16px;">
+        <input type="text" id="keywordAddInput" placeholder="키워드 입력 후 Enter 또는 쉼표(,)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+      </div>
+      <div id="currentKeywords" style="margin-bottom:20px;min-height:40px;">
+        ${(post.keywords || []).length === 0 ? '<div style="color:var(--text-mute);font-size:12px;">등록된 키워드가 없습니다.</div>' : (post.keywords || []).map((k, idx) => `
+          <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text);margin-right:6px;margin-bottom:6px;">
+            ${escapeHtml(k)}
+            <button onclick="removeKeywordInModal('${urlKey}',${idx})" style="background:transparent;border:none;color:var(--text-mute);cursor:pointer;padding:0;font-size:14px;line-height:1;">×</button>
+          </span>`).join('')}
+      </div>
+      <button onclick="closeKeywordModal()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">완료</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeKeywordModal(); });
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    const input = document.getElementById('keywordAddInput');
+    input?.focus();
+    input?.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = input.value.trim().replace(/,$/, '').trim();
+        if (val) {
+          await addKeyword(urlKey, val);
+          input.value = '';
+          closeKeywordModal();
+          openKeywordModal(urlKey);
+        }
+      }
+    });
+  }, 100);
+}
+
+function closeKeywordModal() {
+  const el = document.getElementById('keywordModalOverlay');
+  if (el) el.remove();
+}
+
+async function addKeyword(urlKey, keyword) {
+  const post = blogPostsCache.find(p => p.urlKey === urlKey);
+  if (!post) return;
+  const newKeywords = [...(post.keywords || []), keyword];
+  await db.ref(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
+  post.keywords = newKeywords;
+  renderBlogPostsTable([]);
+}
+
+async function removeKeyword(urlKey, index) {
+  if (!isUnlocked) { openModal(); return; }
+  const post = blogPostsCache.find(p => p.urlKey === urlKey);
+  if (!post) return;
+  const newKeywords = (post.keywords || []).filter((_, i) => i !== index);
+  await db.ref(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
+  post.keywords = newKeywords;
+  renderBlogPostsTable([]);
+}
+
+async function removeKeywordInModal(urlKey, index) {
+  await removeKeyword(urlKey, index);
+  closeKeywordModal();
+  openKeywordModal(urlKey);
+}
+
+function openMemoModalBlog(urlKey) {
+  if (!isUnlocked) { openModal(); return; }
+  const post = blogPostsCache.find(p => p.urlKey === urlKey);
+  if (!post) return;
+
+  const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'blogMemoOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+      <div style="font-size:15px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px;">📝 메모</div>
+      <div style="font-size:12px;color:var(--text-mute);margin-bottom:16px;">${escapeHtml(post.title)}</div>
+      <textarea id="blogMemoInput" placeholder="메모를 입력해 주세요" rows="5" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text);outline:none;resize:vertical;font-family:inherit;">${escapeHtml(post.memo || '')}</textarea>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button onclick="closeBlogMemoModal()" style="flex:1;padding:11px;border-radius:10px;border:none;background:var(--surface2);color:var(--text-sub);font-size:13px;font-weight:600;cursor:pointer;">취소</button>
+        <button onclick="saveBlogMemo('${urlKey}')" style="flex:1;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">저장</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeBlogMemoModal(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('blogMemoInput')?.focus(), 100);
+}
+
+function closeBlogMemoModal() {
+  const el = document.getElementById('blogMemoOverlay');
+  if (el) el.remove();
+}
+
+async function saveBlogMemo(urlKey) {
+  const memo = document.getElementById('blogMemoInput')?.value.trim() || '';
+  const post = blogPostsCache.find(p => p.urlKey === urlKey);
+  if (!post) return;
+  await db.ref(`blog_posts/${urlKey}`).update({ keywords: post.keywords || [], memo: memo });
+  post.memo = memo;
+  closeBlogMemoModal();
+  renderBlogPostsTable([]);
+}
+
 async function saveUtmLabel() {
   const raw = document.getElementById('utmRawInput')?.value.trim();
   const label = document.getElementById('utmLabelInput')?.value.trim();
@@ -473,6 +871,7 @@ function render() {
   else if (curPageId.startsWith('adlog_')) renderMediaTable(curPageId.replace('adlog_', ''));
   else if (curPageId === 'leads_list') renderLeads();
   else if (curPageId === 'leads_utm_labels') renderUtmLabels();
+  else if (curPageId === 'blog_manage') renderBlogManage();
   else if (curPageId === 'sales_dashboard') renderSalesDashboard();
   else if (curPageId === 'sales_monthly') renderSalesMonthly();
   else renderComingSoon();
@@ -1894,6 +2293,7 @@ updateBreadcrumb();
 updateMonthLabel();
 showLoading();
 initUtmLabels();
+initBlogsListener();
 initLeadsNotification();
 (async () => {
   await fetchAllData();

@@ -53,6 +53,49 @@ const MENU = [
   }
 ];
 
+const BRANCHES = [
+  { id: 'seocho', name: '서초본원', color: '#007AFF' },
+  { id: 'ilsan',  name: '일산점',  color: '#4A9EFF' },
+  { id: 'cancer', name: '암센터',  color: '#7EBBFF' }
+];
+
+let currentBranch = localStorage.getItem('helixCurrentBranch') || 'seocho';
+if (!BRANCHES.find(b => b.id === currentBranch)) currentBranch = 'seocho';
+
+function getCurrentBranch() {
+  return BRANCHES.find(b => b.id === currentBranch) || BRANCHES[0];
+}
+
+function branchRef(path) {
+  return db.ref(`branches/${currentBranch}/${path}`);
+}
+
+function switchBranch(branchId) {
+  if (!BRANCHES.find(b => b.id === branchId)) return;
+  if (branchId === currentBranch) return;
+  currentBranch = branchId;
+  localStorage.setItem('helixCurrentBranch', branchId);
+  renderBranchTabs();
+  (async () => {
+    if (typeof fetchAllData === 'function') await fetchAllData();
+    if (typeof render === 'function') render();
+  })();
+}
+
+function renderBranchTabs() {
+  const container = document.getElementById('branchTabsBar');
+  if (!container) return;
+  const html = BRANCHES.map(b => {
+    const isActive = b.id === currentBranch;
+    return `
+      <button onclick="switchBranch('${b.id}')"
+        style="padding:7px 18px;border-radius:8px;border:1.5px solid ${isActive ? b.color : 'var(--border)'};background:${isActive ? b.color : 'transparent'};color:${isActive ? '#fff' : 'var(--text-sub)'};font-size:13px;font-weight:${isActive ? '700' : '500'};cursor:pointer;transition:all 0.15s;margin-right:8px;letter-spacing:-0.2px;">
+        ${b.name}
+      </button>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
 const MEDIA = [
   { id:'meta',   name:'메타',   color:'#1877F2' },
   { id:'google', name:'구글',   color:'#EA4335' },
@@ -2289,6 +2332,7 @@ db.ref('leads').on('value', async (snap) => {
 });
 
 buildSidebar();
+renderBranchTabs();
 updateBreadcrumb();
 updateMonthLabel();
 showLoading();

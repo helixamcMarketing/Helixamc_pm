@@ -816,6 +816,7 @@ function toggleSidebar() {
 
 function navigateTo(pageId) {
   curPageId = pageId;
+  localStorage.setItem('helixCurrentPageId', curPageId);
   // update active state
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.id === `navitem_${pageId}`);
@@ -1751,6 +1752,8 @@ async function renderSalesMonthly() {
 }
 
 async function autoFillMediaDB(entries, year, month) {
+  // 실행 시점의 지점을 캡처. 실행 중 지점이 바뀌어도 처음 지점을 유지
+  const branchAtStart = currentBranch;
   const mediaMap = {
     '메타': 'meta', '구글': 'google', '당근': 'daangn',
     '카카오': 'kakao', '틱톡': 'tiktok', '네이버': 'naver',
@@ -1780,7 +1783,7 @@ async function autoFillMediaDB(entries, year, month) {
   const allMediaIds = Object.values(mediaMap);
 
   for (const mediaId of allMediaIds) {
-    const snap = await branchRef(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
+    const snap = await db.ref(`branches/${branchAtStart}/adlog/${year}/${monthStr}/${mediaId}`).once('value');
     const existing = snap.val() || {};
 
     Object.keys(existing).forEach(day => {
@@ -1802,7 +1805,7 @@ async function autoFillMediaDB(entries, year, month) {
       existing[day].invalidDb = count;
     }
 
-    await branchRef(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);
+    await db.ref(`branches/${branchAtStart}/adlog/${year}/${monthStr}/${mediaId}`).set(existing);
   }
 }
 
@@ -2337,6 +2340,11 @@ branchRef('leads').on('value', async (snap) => {
   }
 });
 
+// 마지막 페이지 복원
+const savedPageId = localStorage.getItem('helixCurrentPageId');
+if (savedPageId && typeof curPageId !== 'undefined') {
+  curPageId = savedPageId;
+}
 buildSidebar();
 renderBranchTabs();
 updateBreadcrumb();

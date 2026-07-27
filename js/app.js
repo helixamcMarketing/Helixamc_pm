@@ -73,9 +73,22 @@ function branchRef(path) {
 function switchBranch(branchId) {
   if (!BRANCHES.find(b => b.id === branchId)) return;
   if (branchId === currentBranch) return;
+  // 기존 지점의 실시간 리스너 해제
+  try {
+    db.ref(`branches/${currentBranch}/leads`).off();
+    db.ref(`branches/${currentBranch}/adlog`).off();
+    db.ref(`branches/${currentBranch}/utm_content_labels`).off();
+    db.ref(`branches/${currentBranch}/blogs`).off();
+  } catch (e) { console.warn('[branch] listener off error:', e); }
+
   currentBranch = branchId;
   localStorage.setItem('helixCurrentBranch', branchId);
   renderBranchTabs();
+
+  // 새 지점 리스너 재구독
+  if (typeof initUtmLabels === 'function') initUtmLabels();
+  if (typeof initBlogsListener === 'function') initBlogsListener();
+
   (async () => {
     if (typeof fetchAllData === 'function') await fetchAllData();
     if (typeof render === 'function') render();
@@ -141,15 +154,15 @@ function cacheKey(year, month, mediaId) { return `${year}_${String(month).padSta
 function loadData(year, month, mediaId) { return dataCache[cacheKey(year, month, mediaId)] || {}; }
 function saveData(year, month, mediaId, data) {
   dataCache[cacheKey(year, month, mediaId)] = data;
-  db.ref(`adlog/${year}/${String(month).padStart(2,'00')}/${mediaId}`).set(data).catch(e => console.error(e));
+  branchRef(`adlog/${year}/${String(month).padStart(2,'00')}/${mediaId}`).set(data).catch(e => console.error(e));
 }
 async function fetchMonthData(year, month) {
-  const snap = await db.ref(`adlog/${year}/${String(month).padStart(2,'0')}`).once('value');
+  const snap = await branchRef(`adlog/${year}/${String(month).padStart(2,'0')}`).once('value');
   const val  = snap.val() || {};
   MEDIA.forEach(m => { dataCache[cacheKey(year, month, m.id)] = val[m.id] || {}; });
 }
 async function fetchAllData() {
-  const snap = await db.ref('adlog').once('value');
+  const snap = await branchRef('adlog').once('value');
   const val  = snap.val() || {};
   Object.entries(val).forEach(([year, months]) => {
     Object.entries(months).forEach(([month, medias]) => {
@@ -168,7 +181,7 @@ function getUtmContentLabel(rawValue) {
 }
 
 function initUtmLabels() {
-  db.ref('utm_content_labels').on('value', (snap) => {
+  branchRef('utm_content_labels').on('value', (snap) => {
     utmContentLabels = snap.val() || {};
     if (curPageId === 'leads_utm_labels') {
       renderUtmLabels();
@@ -198,7 +211,7 @@ function initLeadsNotification() {
 
   const startTime = Date.now();
 
-  db.ref('leads').on('child_added', (snap) => {
+  branchRef('leads').on('child_added', (snap) => {
     const v = snap.val() || {};
     const submittedAt = v.submittedAt ? new Date(v.submittedAt).getTime() : 0;
 
@@ -230,7 +243,7 @@ function initLeadsNotification() {
 }
 
 async function renderUtmLabels() {
-  const snap = await db.ref('leads').once('value');
+  const snap = await branchRef('leads').once('value');
   const val = snap.val() || {};
   const usageCounts = {};
   Object.values(val).forEach(lead => {
@@ -390,7 +403,7 @@ async function fetchBlogRss(blogId) {
 }
 
 function initBlogsListener() {
-  db.ref('blogs').on('value', (snap) => {
+  branchRef('blogs').on('value', (snap) => {
     blogsList = snap.val() || {};
     if (curPageId === 'blog_manage') {
       renderBlogManage();
@@ -471,7 +484,7 @@ async function loadBlogPosts() {
 
   allPosts.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
-  const metaSnap = await db.ref('blog_posts').once('value');
+  const metaSnap = await branchRef('blog_posts').once('value');
   const metaMap = metaSnap.val() || {};
 
   blogPostsCache = allPosts.map(p => {
@@ -609,7 +622,7 @@ async function saveBlogRegister() {
   const color = BLOG_COLORS[existingCount % BLOG_COLORS.length];
   const blogId = 'blog_' + Date.now();
 
-  await db.ref(`blogs/${blogId}`).set({
+  await branchRef(`blogs/${blogId}`).set({
     name: name,
     purpose: purposeEl.value,
     naverId: naverId,
@@ -625,7 +638,7 @@ async function deleteBlog(blogId) {
   const b = blogsList[blogId];
   if (!b) return;
   if (!confirm(`"${b.name}" 블로그를 삭제하시겠습니까?\n(포스팅별 키워드·메모는 유지됩니다.)`)) return;
-  await db.ref(`blogs/${blogId}`).remove();
+  await branchRef(`blogs/${blogId}`).remove();
 }
 
 function openKeywordModal(urlKey) {
@@ -684,7 +697,7 @@ async function addKeyword(urlKey, keyword) {
   const post = blogPostsCache.find(p => p.urlKey === urlKey);
   if (!post) return;
   const newKeywords = [...(post.keywords || []), keyword];
-  await db.ref(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
+  await branchRef(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
   post.keywords = newKeywords;
   renderBlogPostsTable([]);
 }
@@ -694,7 +707,7 @@ async function removeKeyword(urlKey, index) {
   const post = blogPostsCache.find(p => p.urlKey === urlKey);
   if (!post) return;
   const newKeywords = (post.keywords || []).filter((_, i) => i !== index);
-  await db.ref(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
+  await branchRef(`blog_posts/${urlKey}`).update({ keywords: newKeywords, memo: post.memo || '' });
   post.keywords = newKeywords;
   renderBlogPostsTable([]);
 }
@@ -739,7 +752,7 @@ async function saveBlogMemo(urlKey) {
   const memo = document.getElementById('blogMemoInput')?.value.trim() || '';
   const post = blogPostsCache.find(p => p.urlKey === urlKey);
   if (!post) return;
-  await db.ref(`blog_posts/${urlKey}`).update({ keywords: post.keywords || [], memo: memo });
+  await branchRef(`blog_posts/${urlKey}`).update({ keywords: post.keywords || [], memo: memo });
   post.memo = memo;
   closeBlogMemoModal();
   renderBlogPostsTable([]);
@@ -751,14 +764,14 @@ async function saveUtmLabel() {
   if (!raw) { alert('UTM 값을 입력해 주세요.'); return; }
   if (!label) { alert('소재명을 입력해 주세요.'); return; }
   if (/[.#$\[\]\/]/.test(raw)) { alert('UTM 값에 . # $ [ ] / 문자는 사용할 수 없습니다.'); return; }
-  await db.ref(`utm_content_labels/${raw}`).set(label);
+  await branchRef(`utm_content_labels/${raw}`).set(label);
   closeUtmLabelModal();
 }
 
 async function deleteUtmLabel(rawValue) {
   if (!isUnlocked) { openModal(); return; }
   if (!confirm(`"${rawValue}" 매핑을 삭제하시겠습니까?`)) return;
-  await db.ref(`utm_content_labels/${rawValue}`).remove();
+  await branchRef(`utm_content_labels/${rawValue}`).remove();
 }
 
 /* ══════════════════════════════════════════════
@@ -965,7 +978,7 @@ async function renderLeads() {
   window._leadsSearchType = 'name';
   window._leadsAllEntries = [];
 
-  db.ref('leads').on('value', (snap) => {
+  branchRef('leads').on('value', (snap) => {
     const val = snap.val();
 
     if (!val) {
@@ -1249,7 +1262,7 @@ function downloadLeadsCsv() {
 
 // 예약 모달 열기
 async function openReserveModal(key) {
-  const snap = await db.ref(`leads/${key}`).once('value');
+  const snap = await branchRef(`leads/${key}`).once('value');
   const v = snap.val() || {};
   const reserved = !!v.reserved;
   const reservedAt = v.reservedAt || '';
@@ -1301,7 +1314,7 @@ async function saveReservation(key) {
     alert('예약 일시를 선택해 주세요.');
     return;
   }
-  await db.ref(`leads/${key}`).update({
+  await branchRef(`leads/${key}`).update({
     reserved: true,
     reservedAt: val
   });
@@ -1310,7 +1323,7 @@ async function saveReservation(key) {
 
 async function cancelReservation(key) {
   if (!confirm('예약을 취소하시겠습니까?')) return;
-  await db.ref(`leads/${key}`).update({
+  await branchRef(`leads/${key}`).update({
     reserved: false,
     reservedAt: ''
   });
@@ -1319,10 +1332,10 @@ async function cancelReservation(key) {
 
 async function deleteLead(key) {
   if (!confirm('이 신청 데이터를 삭제하시겠습니까?')) return;
-  await db.ref(`leads/${key}`).remove();
+  await branchRef(`leads/${key}`).remove();
 
   // 삭제 후 전체 leads 다시 읽어서 adlog 재집계
-  const snap = await db.ref('leads').once('value');
+  const snap = await branchRef('leads').once('value');
   const val = snap.val();
   const entries = val ? Object.entries(val) : [];
   await autoFillMediaDB(entries, curYear, curMonth);
@@ -1359,7 +1372,7 @@ function getStatusOption(value) {
 
 function openStatusModal(key) {
   if (!isUnlocked) { openModal(); return; }
-  db.ref(`leads/${key}`).once('value').then(snap => {
+  branchRef(`leads/${key}`).once('value').then(snap => {
     const v = snap.val() || {};
     const currentStatus = getLeadStatus(v);
 
@@ -1406,7 +1419,7 @@ async function changeStatus(key, newStatus) {
     updates.invalid = null;
     updates.invalidAt = null;
   }
-  await db.ref(`leads/${key}`).update(updates);
+  await branchRef(`leads/${key}`).update(updates);
   closeStatusModal();
 }
 
@@ -1425,7 +1438,7 @@ function showInquiry(text) {
 
 // 상담 메모 모달
 async function openMemoModal(key) {
-  const snap = await db.ref(`leads/${key}`).once('value');
+  const snap = await branchRef(`leads/${key}`).once('value');
   const v = snap.val() || {};
   const memo = v.memo || '';
   const memoUpdatedAt = v.memoUpdatedAt || '';
@@ -1470,7 +1483,7 @@ function closeMemoModal() {
 async function saveMemo(key) {
   const input = document.getElementById('memoTextInput');
   const val = (input?.value || '').trim();
-  await db.ref(`leads/${key}`).update({
+  await branchRef(`leads/${key}`).update({
     memo: val,
     memoUpdatedAt: new Date().toISOString()
   });
@@ -1529,7 +1542,7 @@ async function handleSalesUpload(file) {
         };
       }
 
-      await db.ref(`sales/${year}/${month}`).set({ summary, daily });
+      await branchRef(`sales/${year}/${month}`).set({ summary, daily });
       uploadedMonths.push(`${year}.${month}`);
     }
 
@@ -1559,7 +1572,7 @@ async function renderSalesDashboard() {
 
   document.getElementById('content').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--text-mute);font-size:13px;">데이터 불러오는 중...</div>`;
 
-  const snap = await db.ref('sales').once('value');
+  const snap = await branchRef('sales').once('value');
   const salesData = snap.val() || {};
 
   // 월별 요약 집계
@@ -1680,7 +1693,7 @@ async function renderSalesMonthly() {
   }
 
   const month = String(curMonth).padStart(2, '0');
-  const snap = await db.ref(`sales/${curYear}/${month}`).once('value');
+  const snap = await branchRef(`sales/${curYear}/${month}`).once('value');
   const data = snap.val();
 
   if (!data) {
@@ -1774,7 +1787,7 @@ async function autoFillMediaDB(entries, year, month) {
   const allMediaIds = Object.values(mediaMap);
 
   for (const mediaId of allMediaIds) {
-    const snap = await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
+    const snap = await branchRef(`adlog/${year}/${monthStr}/${mediaId}`).once('value');
     const existing = snap.val() || {};
 
     Object.keys(existing).forEach(day => {
@@ -1796,7 +1809,7 @@ async function autoFillMediaDB(entries, year, month) {
       existing[day].invalidDb = count;
     }
 
-    await db.ref(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);
+    await branchRef(`adlog/${year}/${monthStr}/${mediaId}`).set(existing);
   }
 }
 
@@ -2317,7 +2330,7 @@ function showLoading() {
 }
 
 // leads 실시간 리스너 — adlog 자동 갱신
-db.ref('leads').on('value', async (snap) => {
+branchRef('leads').on('value', async (snap) => {
   const val = snap.val();
   const entries = val ? Object.entries(val) : [];
   await autoFillMediaDB(entries, curYear, curMonth);

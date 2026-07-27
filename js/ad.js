@@ -45,7 +45,7 @@ function selectPetType(btn) {
       throw new Error('Firebase가 초기화되지 않았습니다. Firebase 설정값을 확인해 주세요.');
     }
     // Firebase Realtime DB: /leads/ 경로에 저장
-    const leadsRef = dbRef(db, 'leads');
+    const leadsRef = dbRef(db, 'branches/seocho/leads');
     await dbPush(leadsRef, data);
   }
 

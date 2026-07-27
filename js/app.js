@@ -73,7 +73,8 @@ function branchRef(path) {
 function switchBranch(branchId) {
   if (!BRANCHES.find(b => b.id === branchId)) return;
   if (branchId === currentBranch) return;
-  // 기존 지점의 실시간 리스너 해제
+
+  // 리스너 명시적 해제 (다음 진입 시 클린 상태로 시작)
   try {
     db.ref(`branches/${currentBranch}/leads`).off();
     db.ref(`branches/${currentBranch}/adlog`).off();
@@ -81,18 +82,10 @@ function switchBranch(branchId) {
     db.ref(`branches/${currentBranch}/blogs`).off();
   } catch (e) { console.warn('[branch] listener off error:', e); }
 
+  // 지점 저장 후 페이지 새로고침으로 모든 상태·캐시 완전 초기화
   currentBranch = branchId;
   localStorage.setItem('helixCurrentBranch', branchId);
-  renderBranchTabs();
-
-  // 새 지점 리스너 재구독
-  if (typeof initUtmLabels === 'function') initUtmLabels();
-  if (typeof initBlogsListener === 'function') initBlogsListener();
-
-  (async () => {
-    if (typeof fetchAllData === 'function') await fetchAllData();
-    if (typeof render === 'function') render();
-  })();
+  window.location.reload();
 }
 
 function renderBranchTabs() {

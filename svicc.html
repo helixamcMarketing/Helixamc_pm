@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1F3A" />
+  <title>서울동물영상종양센터 - 상담 신청</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800;900&family=Cormorant+Garamond:wght@400;600;700&family=Permanent+Marker&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/ad.css" />
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyCmJpvfoMvquoBdDJAK4ZJ657C2UOTZ5eU",
+      authDomain: "helixamc-pm.firebaseapp.com",
+      databaseURL: "https://helixamc-pm-default-rtdb.firebaseio.com",
+      projectId: "helixamc-pm",
+      storageBucket: "helixamc-pm.firebasestorage.app",
+      messagingSenderId: "382526528183",
+      appId: "1:382526528183:web:c487b9de1471829afe0b32",
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    window.__firebaseDB   = db;
+    window.__firebaseRef  = ref;
+    window.__firebasePush = push;
+    document.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init','934156036153660');fbq('track','PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=934156036153660&ev=PageView&noscript=1"/></noscript>
+  <!-- End Meta Pixel Code -->
+
+  <!-- TikTok Pixel Code Start -->
+  <script>
+  !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+  ttq.load('D7E7TPJC77U97DR2MU3G');ttq.page();
+  }(window,document,'ttq');
+  </script>
+  <!-- TikTok Pixel Code End -->
+
+  <!-- Danggeun Market Code -->
+  <script src="https://karrot-pixel.business.daangn.com/karrot-pixel.js"></script>
+  <script>window.karrotPixel.init('1776058563951938001');window.karrotPixel.track('ViewPage');</script>
+  <!-- End Danggeun Market Code -->
+
+  <!-- Kakao Pixel Code -->
+  <script type="text/javascript" charset="UTF-8" src="//t1.daumcdn.net/kas/static/kp.js"></script>
+  <script type="text/javascript">kakaoPixel('368097386331325962').pageView();</script>
+  <!-- End Kakao Pixel Code -->
+
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0F55R2PE1Q"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-0F55R2PE1Q');</script>
+  <!-- End Google Analytics GA4 -->
+
+  <style>
+    /* —— 인증 섹션 (B안: 본원 "말보다 인증으로" 스타일) —— */
+    .certifications {
+      background: #0B1F3A;
+      padding: 110px 0 100px;
+      border-top: 1px solid #122847;
+      border-bottom: 1px solid #122847;
+      position: relative;
+      overflow: hidden;
+    }
+    .certifications::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 40% at 50% 0%, rgba(59,158,255,0.25), transparent 60%),
+        radial-gradient(circle at 20% 50%, rgba(59,158,255,0.06), transparent 50%),
+        radial-gradient(circle at 80% 60%, rgba(59,158,255,0.04), transparent 55%);
+      pointer-events: none;
+    }
+    .certifications::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background:
+        radial-gradient(ellipse 80% 100% at 50% 100%, rgba(59,158,255,0.22), transparent 70%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .certifications .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 상단 헤더 */
+    .cert-header {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 72px;
+    }
+    .cert-header .section-label { color: #3B9EFF; }
+    .cert-header__title {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      margin: 0 0 20px 0;
+    }
+    .cert-header__desc {
+      color: rgba(255,255,255,0.7);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+    .cert-header__accent {
+      color: #3B9EFF;
+      font-weight: 700;
+    }
+
+    /* 인증 3개 그리드 */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* 각 인증 카드 */
+    .cert-card {
+      text-align: center;
+      padding: 24px 20px;
+      transition: transform 0.3s ease;
+    }
+    .cert-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .cert-card__num {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .cert-card:hover .cert-card__num {
+      background: rgba(59,158,255,0.2);
+      color: #3B9EFF;
+    }
+
+    .cert-card__badge {
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 28px;
+      background: #FFFFFF;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 18px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .cert-card:hover .cert-card__badge {
+      transform: scale(1.03);
+      box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 20px 40px rgba(59,158,255,0.25);
+    }
+    .cert-card__badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .cert-card__badge-fallback {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cert-card__body {
+      padding: 0 8px;
+    }
+    .cert-card__title-en {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+    }
+    .cert-card__subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin: 0 0 18px 0;
+      line-height: 1.5;
+    }
+    .cert-card__title-ko {
+      font-size: 16px;
+      font-weight: 700;
+      color: #3B9EFF;
+      margin: 0 0 12px 0;
+      letter-spacing: -0.02em;
+    }
+    .cert-card__desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.75;
+      margin: 0;
+      word-break: keep-all;
+    }
+
+    /* 하단 CTA */
+    .cert-cta-wrap {
+      margin-top: 72px;
+      text-align: center;
+    }
+    .cert-split__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: #FFFFFF;
+      color: #0B1F3A;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 0 0 1px rgba(59,158,255,0.35), 0 6px 20px rgba(59,158,255,0.22);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .cert-split__cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px rgba(59,158,255,0.55), 0 10px 28px rgba(59,158,255,0.35);
+    }
+
+    /* 태블릿 (960px 이하) */
+    @media (max-width: 960px) {
+      .certifications { padding: 80px 0 !important; }
+      .cert-header { margin-bottom: 56px; }
+      .cert-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        max-width: 420px;
+      }
+      .cert-cta-wrap { margin-top: 56px; }
+    }
+
+    /* 모바일 (640px 이하) */
+    @media (max-width: 640px) {
+      .certifications { padding: 64px 0 !important; }
+      .cert-header { margin-bottom: 48px; }
+      .cert-card__badge {
+        width: 140px;
+        height: 140px;
+        padding: 16px;
+      }
+      .cert-card__title-en { font-size: 16px; }
+      .cert-card__title-ko { font-size: 15px; }
+      .cert-card__desc { font-size: 13px; }
+    }
+  </style>
+</head>
+<body data-branch="cancer">
+
+  <!-- ① 메인 배너 -->
+  <section class="hero">
+    <div class="hero__bg">
+      <div class="hero__placeholder"></div>
+      <div class="hero__overlay"></div>
+    </div>
+    <div class="container hero__content">
+      <div class="hero__tag">HELIX Animal Medical Center</div>
+      <h1 class="hero__title">
+        대한민국 동물 의료의<br /><span class="hero__title-accent">새로운 기준</span>
+      </h1>
+      <p class="hero__desc">
+        국제 인증 시설, 국내 최초 하이브리드 수술실 운영.<br />
+        하이엔드 장비 구축. 반려동물에게 최고 수준의 의료를 제공합니다.
+      </p>
+      <a href="#form" class="hero__cta">상담 예약 신청하기 →</a>
+    </div>
+    <div class="hero__scroll"><span></span></div>
+  </section>
+
+  <!-- ② 헬릭스만의 차별점 -->
+  <section class="strengths">
+    <div class="container">
+      <div class="section-label observe">WHY HELIX</div>
+      <div class="strengths__question observe">
+        <p class="strengths__question-text">‘우리 아이에게 더 해줄 수 있는 치료가 있었던 건 아닐까?’</p>
+        <p class="strengths__question-answer">이 질문을 거듭하며, 헬릭스는 <span class="accent-keyword">고난도 복합 질환</span>의 답을 찾아왔습니다.</p>
+      </div>
+      <h2 class="section-title observe">헬릭스가 다른 이유</h2>
+      <div class="strengths__grid">
+
+        <div class="strength-card observe">
+          <div class="strength-card__num">01</div>
+          <div class="strength-card__icon">📡</div>
+          <h3>첨단 인터벤셔널 영상 시스템</h3>
+          <p>첨단 인터벤셔널 영상의 표준 <span class="accent-keyword">Canon Alphenix</span>를 도입했습니다. 일반 장비 대비 <span class="accent-keyword">2배 정밀한 영상</span>(76μm)으로 혈관과 장기 내부까지 확인하며, <span class="accent-keyword">절개 없는 정밀 시술</span>로 환자 부담을 줄입니다.</p>
+        </div>
+
+        <div class="strength-card observe">
+          <div class="strength-card__num">02</div>
+          <div class="strength-card__icon">👨‍⚕️</div>
+          <h3>과목별 전문 수의사 팀</h3>
+          <p>필요한 치료를 놓치지 않게 <span class="accent-keyword">각 분야 전문 수의사</span>가 협진합니다. 복잡한 케이스도 팀 접근으로 최적의 치료를 제공합니다.</p>
+        </div>
+
+        <div class="strength-card observe">
+          <div class="strength-card__num">03</div>
+          <div class="strength-card__icon">🚨</div>
+          <h3>24시간 응급 집중치료</h3>
+          <p><span class="accent-keyword">야간·휴일 구분 없이</span> 응급 상황에 즉각 대응합니다. 전담 응급팀과 수술후 모니터링 시스템이 <span class="accent-keyword">골든 타임</span>을 지킵니다.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 국제 인증 -->
+  <section class="certifications">
+    <div class="container">
+
+      <!-- 상단 헤더 (중앙 정렬) -->
+      <div class="cert-header observe">
+        <div class="section-label">ACCREDITATIONS</div>
+        <h2 class="cert-header__title">말보다 인증으로.</h2>
+        <p class="cert-header__desc">
+          헬릭스의 여러분을 향한 진심이 왜곡되지 않도록<br />
+          <span class="cert-header__accent">까다롭고 엄중한 기관의 인증</span>을 받아왔습니다.
+        </p>
+      </div>
+
+      <!-- 인증 3개 그리드 -->
+      <div class="cert-grid">
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">1</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-aaha.png" alt="AAHA 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🏅</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">AAHA Accreditation</h3>
+            <p class="cert-card__subtitle">(AAHA: American Animal Hospital Association)</p>
+            <h4 class="cert-card__title-ko">미국동물병원협회 인증</h4>
+            <p class="cert-card__desc">전 세계 동물병원 중 상위 15%만이 통과하는 엄격한 의료 기준을 검증받은 병원입니다.</p>
+          </div>
+        </div>
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">2</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-veccs.png" alt="VECCS 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🏅</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">VECCS Facility Accreditation</h3>
+            <p class="cert-card__subtitle">(Veterinary Emergency and Critical Care Society)</p>
+            <h4 class="cert-card__title-ko">응급 및 중환자 케어 인증</h4>
+            <p class="cert-card__desc">24시간 응급·수술후 진료 체계의 수준을 국제 기준으로 공식 검증받았습니다.</p>
+          </div>
+        </div>
+
+        <div class="cert-card observe">
+          <div class="cert-card__num">3</div>
+          <div class="cert-card__badge">
+            <img src="images/cert-cfc.png" alt="CFC GOLD 인증 배지"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <span class="cert-card__badge-fallback">🐱</span>
+          </div>
+          <div class="cert-card__body">
+            <h3 class="cert-card__title-en">CFC (Cat Friendly Clinic)<br/>GOLD 등급</h3>
+            <p class="cert-card__subtitle">by 세계고양이수의학회(ISFM)</p>
+            <h4 class="cert-card__title-ko">고양이 친화 진료소 인증</h4>
+            <p class="cert-card__desc">고양이 전용 대기실, 스트레스 최소화 환경, 특화 진료 프로토콜을 갖춘 최고 등급 진료실입니다.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 하단 CTA -->
+      <div class="cert-cta-wrap observe">
+        <a href="#form" class="cert-split__cta">상담 예약 신청하기 →</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ④ 국내 최초 하이브리드 수술실 -->
+  <section class="hybrid-or">
+    <div class="container">
+      <div class="section-label observe">INFRASTRUCTURE</div>
+      <div class="hybrid-or__script observe">Why Hybrid?</div>
+      <h2 class="section-title observe">국내 최초 하이브리드 수술실</h2>
+      <p class="hybrid-or__subtitle observe">첨단 영상 장비가 구축된 하이브리드 수술실</p>
+      <p class="hybrid-or__desc observe">
+        하이브리드 수술실(Hybrid OR)이란, <span class="accent-keyword">첨단 영상 진단 시스템과 수술실이 하나로 통합된 공간</span>입니다.<br />
+        기존에는 진단과 수술이 별개의 공간에서 이루어져 환자 이동과 마취 시간 연장이 불가피했지만,<br />
+        하이브리드 수술실에서는 이 모든 과정이 <span class="accent-keyword">단 한 공간, 단 한 번의 마취 아래</span> 연속적으로 이루어집니다.
+      </p>
+
+      <!-- 기존 vs 하이브리드 비교 박스 -->
+      <div class="hybrid-or__compare observe">
+        <div class="hybrid-or__compare-col hybrid-or__compare-col--before">
+          <div class="hybrid-or__compare-tag">기존</div>
+          <h4 class="hybrid-or__compare-title">분리된 공간</h4>
+          <p class="hybrid-or__compare-desc">
+            진단과 수술이 각각 다른 공간에서 진행되어<br />
+            환자 이동과 반복 마취로 시간 지연과 부담이 발생
+          </p>
+        </div>
+
+        <div class="hybrid-or__compare-arrow" aria-hidden="true">
+          <span>→</span>
+        </div>
+
+        <div class="hybrid-or__compare-col hybrid-or__compare-col--after">
+          <div class="hybrid-or__compare-tag">하이브리드 수술실</div>
+          <h4 class="hybrid-or__compare-title">통합 공간</h4>
+          <p class="hybrid-or__compare-desc">
+            한 공간에서 진단 → 시술 → 수술이 즉시 연계되어<br />
+            골든타임 확보와 환자 부담 최소화 실현
+          </p>
+        </div>
+      </div>
+
+      <div class="hybrid-or__image observe">
+        <img src="images/HOR.png" alt="서울동물영상종양센터 하이브리드 수술실"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="hybrid-or__image-fallback"></div>
+      </div>
+
+      <div class="hybrid-or__specs">
+        <div class="hybrid-or__spec observe">
+          <div class="hybrid-or__spec-icon">📡</div>
+          <div class="hybrid-or__spec-title">첨단 영상 장비</div>
+          <p class="hybrid-or__spec-desc">Canon Alphenix 기반 하이브리드 시스템 구축</p>
+        </div>
+        <div class="hybrid-or__spec observe">
+          <div class="hybrid-or__spec-icon">🏥</div>
+          <div class="hybrid-or__spec-title">통합 수술 환경</div>
+          <p class="hybrid-or__spec-desc">진단에서 수술까지 한 공간에서 연속 수행</p>
+        </div>
+        <div class="hybrid-or__spec observe">
+          <div class="hybrid-or__spec-icon">🐾</div>
+          <div class="hybrid-or__spec-title">환자 부담 최소화</div>
+          <p class="hybrid-or__spec-desc">이동 없는 연속 진료로 스트레스 감소</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 진료 영역 (현재 비활성화 - 추후 필요 시 주석 해제)
+  <section class="departments">
+    <div class="container">
+      <div class="section-label observe">DEPARTMENTS</div>
+      <h2 class="section-title observe">진료 영역</h2>
+      <p class="departments__subtitle observe">각 분야별 전문 수의사가 정밀 진료를 제공합니다.</p>
+      <div class="dept__grid">
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🫁</div>
+          <h3>내과</h3>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🦴</div>
+          <h3>외과</h3>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">👁️</div>
+          <h3>안과</h3>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">📡</div>
+          <h3>영상의학과</h3>
+        </div>
+        <div class="dept-card observe">
+          <div class="dept-card__icon">🦷</div>
+          <h3>치과</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+  -->
+
+  <!-- ⑤ BRIDGE -->
+  <section class="bridge">
+    <div class="container">
+      <div class="bridge__inner observe">
+        <h2 class="bridge__title">
+          아직, <span class="bridge__accent">해볼 수 있는 치료</span>가 있습니다.
+        </h2>
+        <p class="bridge__subtitle"><span class="bridge__accent-sub">큰 병원을 찾아온 이유.</span> 헬릭스가 누구보다 잘 알고 있습니다.</p>
+        <a href="#form" class="bridge__cta">상담 예약 신청하기 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 신청 폼 -->
+  <section class="form-section" id="form">
+    <div class="container">
+      <div class="form-section__inner observe">
+        <div class="form-section__heading">
+          <div class="section-label">CONSULTATION</div>
+          <div class="form-section__script">Contact Us</div>
+          <h2 class="section-title">상담 예약 신청하기</h2>
+          <p>아래 정보를 입력해 주시면 <span class="accent-keyword-light">빠르게 연락</span>드리겠습니다.</p>
+        </div>
+
+        <form class="lead-form" id="leadForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">신청자 이름 <span class="required">*</span></label>
+              <input type="text" id="name" name="name" placeholder="홍길동" autocomplete="name" inputmode="text" />
+              <span class="form-error" id="nameError"></span>
+            </div>
+            <div class="form-group">
+              <label for="phone">연락처 <span class="required">*</span></label>
+              <div style="display:flex;align-items:center;gap:0;">
+                <span style="padding:12px 14px;background:var(--color-gray-1);border:1.5px solid var(--color-gray-2);border-right:none;border-radius:var(--radius-sm) 0 0 var(--radius-sm);font-size:16px;color:var(--color-text);white-space:nowrap;min-height:48px;display:flex;align-items:center;">010</span>
+                <input type="tel" id="phone" name="phone"
+                       placeholder="0000-0000" autocomplete="tel"
+                       maxlength="9" inputmode="tel"
+                       style="border-radius:0 var(--radius-sm) var(--radius-sm) 0;" />
+              </div>
+              <span class="form-error" id="phoneError"></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>반려동물 종류</label>
+            <div class="pet-type-group">
+              <button type="button" class="pet-type-btn" data-value="dog" onclick="selectPetType(this)">🐶 강아지</button>
+              <button type="button" class="pet-type-btn" data-value="cat" onclick="selectPetType(this)">🐱 고양이</button>
+            </div>
+            <input type="hidden" id="petType" name="petType" value="">
+          </div>
+
+          <div class="form-group">
+            <label for="petBreed">세부종</label>
+            <input type="text" id="petBreed" name="petBreed" placeholder="예) 말티즈, 코리안숏헤어" inputmode="text" />
+          </div>
+
+          <div class="form-group">
+            <label for="petAge">반려동물 나이</label>
+            <select id="petAge" name="petAge">
+              <option value="">선택해 주세요</option>
+              <option value="1년 미만">1년 미만</option>
+              <option value="1년">1년</option>
+              <option value="2년">2년</option>
+              <option value="3년">3년</option>
+              <option value="4년">4년</option>
+              <option value="5년">5년</option>
+              <option value="6년">6년</option>
+              <option value="7년">7년</option>
+              <option value="8년">8년</option>
+              <option value="9년">9년</option>
+              <option value="10년">10년</option>
+              <option value="11년">11년</option>
+              <option value="12년">12년</option>
+              <option value="13년">13년</option>
+              <option value="14년">14년</option>
+              <option value="15년">15년</option>
+              <option value="16년">16년</option>
+              <option value="17년">17년</option>
+              <option value="18년">18년</option>
+              <option value="19년">19년</option>
+              <option value="20년 이상">20년 이상</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="inquiry">문의 내용</label>
+            <textarea id="inquiry" name="inquiry"
+                      placeholder="반려동물의 증상이나 원하는 진료 영역을 적어주시면 상담에 도움이 됩니다."
+                      rows="4"></textarea>
+          </div>
+
+          <div class="form-group form-group--consent">
+            <label class="checkbox-label">
+              <input type="checkbox" id="consent" name="consent" />
+              <span>개인정보 수집·이용에 동의합니다. <span class="required">*</span></span>
+            </label>
+            <span class="form-error" id="consentError"></span>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span class="submit-btn__text">상담 예약 신청하기</span>
+            <span class="submit-btn__loader" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <div class="success-message" id="successMessage" aria-live="polite">
+          <div class="success-message__icon">✓</div>
+          <h3>신청이 완료되었습니다</h3>
+          <p>빠른 시일 내에 연락드리겠습니다.</p>
+          <a href="https://www.svicc.co.kr/" class="success-message__cta">신청 종료하기 →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>© 2025 HELIX Animal Medical Center. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/ad.js"></script>
+</body>
+</html>

@@ -39,13 +39,24 @@ function selectPetType(btn) {
   // 이미 로드된 경우 대비
   if (window.__firebaseDB) initFirebase();
 
+  // ── 지점 감지 ───────────────────────────
+  function getBranchFromBody() {
+    const branch = document.body?.getAttribute('data-branch');
+    const validBranches = ['seocho', 'ilsan', 'cancer'];
+    return validBranches.includes(branch) ? branch : 'seocho';
+  }
+
+  function getLeadsPath() {
+    return `branches/${getBranchFromBody()}/leads`;
+  }
+
   // ── Firebase 저장 함수 ──────────────────
   async function saveToFirebase(data) {
     if (!db || !dbRef || !dbPush) {
       throw new Error('Firebase가 초기화되지 않았습니다. Firebase 설정값을 확인해 주세요.');
     }
     // Firebase Realtime DB: /leads/ 경로에 저장
-    const leadsRef = dbRef(db, 'branches/seocho/leads');
+    const leadsRef = dbRef(db, getLeadsPath());
     await dbPush(leadsRef, data);
   }
 
